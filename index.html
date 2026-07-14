@@ -2525,6 +2525,21 @@
 // MÓDULO DE UNIDADES — carregado antes dos painéis C2/C3
 // para que ambos leiam/gravem cache já com a unidade certa.
 // ══════════════════════════════════════════════════════
+// Evita que Excel/Sheets interprete valores textuais no formato "07/09"
+// como datas (ex.: "07/09" virando "07 de setembro"). Quando o conteúdo
+// bate com um padrão de data (dd/mm, d/m, dd/mm/aaaa etc.), força a célula
+// a ser lida como texto usando a fórmula ="valor", que o Excel exibe como
+// texto puro, sem reformatar.
+function csvCelula(valor) {
+  const str = String(valor ?? '');
+  const pareceData = /^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(str.trim());
+  const escapado = str.replace(/"/g, '""');
+  if (pareceData && str.trim() !== '') {
+    return `"=""${escapado}"""`;
+  }
+  return `"${escapado}"`;
+}
+
 const UNIDADES_KEY = 'painel_unidades_v1';
 const UNIDADE_ATIVA_KEY = 'painel_unidade_ativa_v1';
 
@@ -2867,7 +2882,7 @@ function exportarCSV() {
 
   const total = f.length;
   const header = cols.map(c => `"${c.h}"`).join(';');
-  const linhas = f.map(p => cols.map(c => `"${String(c.v(p) ?? '').replace(/"/g,'""')}"`).join(';'));
+  const linhas = f.map(p => cols.map(c => csvCelula(c.v(p))).join(';'));
 
   // Linha de totais no final
   const totaisRow = cols.map((c, ci) => {
@@ -5179,7 +5194,7 @@ function exportarCSV() {
 
   const total = f.length;
   const header = cols.map(c => `"${c.h}"`).join(';');
-  const linhas = f.map(p => cols.map(c => `"${String(c.v(p) ?? '').replace(/"/g,'""')}"`).join(';'));
+  const linhas = f.map(p => cols.map(c => csvCelula(c.v(p))).join(';'));
 
   // Linha de totais
   const totaisRow = cols.map((c, ci) => {
@@ -6600,7 +6615,7 @@ function exportarCSV() {
 
   const total = f.length;
   const header = cols.map(c => `"${c.h}"`).join(';');
-  const linhas = f.map(p => cols.map(c => `"${String(c.v(p) ?? '').replace(/"/g,'""')}"`).join(';'));
+  const linhas = f.map(p => cols.map(c => csvCelula(c.v(p))).join(';'));
 
   const totaisRow = cols.map((c, ci) => {
     if (ci === 0) return `"TOTAL (${total} pessoas)"`;
@@ -7963,7 +7978,7 @@ function exportarCSV() {
 
   const total = f.length;
   const header = cols.map(c => `"${c.h}"`).join(';');
-  const linhas = f.map(p => cols.map(c => `"${String(c.v(p) ?? '').replace(/"/g,'""')}"`).join(';'));
+  const linhas = f.map(p => cols.map(c => csvCelula(c.v(p))).join(';'));
 
   const totaisRow = cols.map((c, ci) => {
     if (ci === 0) return `"TOTAL (${total} pessoas)"`;
@@ -8643,6 +8658,16 @@ function carregarDados(rows, filename, headers) {
   // fixa), como quantidade — mesmo raciocínio da coluna AL acima.
   const idxAKc6 = letraColunaParaIndice('AK');
   if (hdrsC6[idxAKc6]) colMap['peso_altura_qtd_AK'] = hdrsC6[idxAKc6];
+  // BP-A (consulta médico/enfermeiro) também estava ficando em branco para
+  // todos os idosos pelo mesmo motivo: o casamento por nome de cabeçalho não
+  // batia com o relatório real. As colunas "Meses desde o último atendimento
+  // médico" e "...de enfermagem" vêm em posição fixa nas colunas W e Y — a
+  // BP-A pontua se QUALQUER uma das duas tiver valor ≤ 12 meses (calcA já usa
+  // o menor dos dois valores).
+  const idxWc6 = letraColunaParaIndice('W');
+  if (hdrsC6[idxWc6]) colMap['meses_medico'] = hdrsC6[idxWc6];
+  const idxYc6 = letraColunaParaIndice('Y');
+  if (hdrsC6[idxYc6]) colMap['meses_enfermagem'] = hdrsC6[idxYc6];
   dados = recalcularDados(rows);
   popularMicroareas();
   const dataImport = new Date().toLocaleDateString('pt-BR');
@@ -9351,7 +9376,7 @@ function exportarCSV() {
 
   const total = f.length;
   const header = cols.map(c => `"${c.h}"`).join(';');
-  const linhas = f.map(p => cols.map(c => `"${String(c.v(p) ?? '').replace(/"/g,'""')}"`).join(';'));
+  const linhas = f.map(p => cols.map(c => csvCelula(c.v(p))).join(';'));
 
   const totaisRow = cols.map((c, ci) => {
     if (ci === 0) return `"TOTAL (${total} pessoas)"`;
@@ -10945,7 +10970,7 @@ function exportarCSV() {
 
   const total = f.length;
   const header = cols.map(c => `"${c.h}"`).join(';');
-  const linhas = f.map(p => cols.map(c => `"${String(c.v(p) ?? '').replace(/"/g,'""')}"`).join(';'));
+  const linhas = f.map(p => cols.map(c => csvCelula(c.v(p))).join(';'));
 
   const totaisRow = cols.map((c, ci) => {
     if (ci === 0) return `"TOTAL (${total} pessoas)"`;
@@ -11588,3 +11613,4 @@ document.getElementById('backupModalOverlay').addEventListener('click', (e) => {
 
 </body>
 </html>
+
