@@ -2990,15 +2990,33 @@
   // página, mesmo antes do IndexedDB terminar de abrir.
   migrarDoLocalStorageAntigo();
 
+  // ── Callbacks de "storage pronto" ──
+  // Como o IndexedDB só termina de carregar de forma ASSÍNCRONA (depois
+  // que todos os <script> da página já rodaram), o primeiro carregamento
+  // de cada painel (ex.: C7) acontece antes dos dados reais estarem
+  // disponíveis no cache — por isso o painel parecia "vazio"/"sem dados"
+  // ao atualizar a página. `window.aoStoragePronto(fn)` permite registrar
+  // uma função que roda de novo assim que os dados reais estiverem
+  // prontos, para o painel se recarregar corretamente.
+  const callbacksProntos = [];
+  window.aoStoragePronto = function(fn) {
+    if (dbPronto) fn(); else callbacksProntos.push(fn);
+  };
+  function marcarStorageComoPronto() {
+    dbPronto = true;
+    gravacoesPendentes.splice(0).forEach(fn => fn());
+    callbacksProntos.splice(0).forEach(fn => {
+      try { fn(); } catch(e) { console.warn('Erro ao recarregar painel após storage pronto:', e); }
+    });
+  }
+
   abrirDB().then(async (database) => {
     db = database;
     await carregarTudoDoDB(database);
-    dbPronto = true;
-    gravacoesPendentes.splice(0).forEach(fn => fn());
+    marcarStorageComoPronto();
   }).catch((e) => {
     console.warn('IndexedDB indisponível — usando memória/localStorage como reserva:', e && e.message);
-    dbPronto = true;
-    gravacoesPendentes.splice(0).forEach(fn => fn());
+    marcarStorageComoPronto();
   });
 })();
 </script>
@@ -3201,6 +3219,24 @@ function fecharGerenciarUnidades() {
 }
 
 renderizarSeletorUnidade();
+
+// Quando o IndexedDB confirmar que terminou de carregar os dados reais
+// (o que acontece um instante DEPOIS do carregamento síncrono acima),
+// recarrega a unidade ativa e avisa cada painel (C2–C7) para recarregar
+// seus dados. Sem isso, um painel podia aparecer "vazio"/"sem dados"
+// logo após atualizar a página, mesmo com os dados intactos salvos.
+if (window.aoStoragePronto) {
+  window.aoStoragePronto(function() {
+    UNIDADES = carregarUnidades();
+    UNIDADE_ATIVA = obterUnidadeAtivaSalva();
+    renderizarSeletorUnidade();
+    ['C2','C3','C4','C5','C6','C7'].forEach(function(p) {
+      if (window[p] && typeof window[p].recarregarParaUnidade === 'function') {
+        try { window[p].recarregarParaUnidade(); } catch(e) { console.warn('Falha ao recarregar painel', p, e); }
+      }
+    });
+  });
+}
 </script>
 
 <script>
@@ -13207,6 +13243,7 @@ document.getElementById('backupModalOverlay').addEventListener('click', (e) => {
 
 </body>
 </html>
+
 
 
 
