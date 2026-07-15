@@ -2872,6 +2872,139 @@
 
 <script>
 // ══════════════════════════════════════════════════════
+// ARMAZENAMENTO AMPLIADO — IndexedDB com cache em memória
+// ══════════════════════════════════════════════════════
+// O localStorage do navegador tem limite fixo de ~5-10MB e não pode
+// ser ampliado por código. Para aumentar a capacidade de fato, todo
+// o painel passa a gravar em IndexedDB (que suporta centenas de MB,
+// dependendo do espaço livre em disco do usuário), através de um
+// objeto global `storage` com a MESMA interface do localStorage
+// (getItem/setItem/removeItem/key/length), então nenhuma outra parte
+// do código precisa mudar. Os dados ficam também em memória (cache),
+// então as leituras continuam síncronas e instantâneas; a gravação
+// em disco (IndexedDB) acontece em segundo plano.
+(function(){
+  const DB_NOME = 'painel_storage_db';
+  const STORE_NOME = 'kv';
+  const cache = Object.create(null);
+  let db = null;
+  let dbPronto = false;
+  const gravacoesPendentes = [];
+
+  function abrirDB() {
+    return new Promise((resolve, reject) => {
+      if (!('indexedDB' in window)) { reject(new Error('IndexedDB indisponível')); return; }
+      const req = indexedDB.open(DB_NOME, 1);
+      req.onupgradeneeded = (ev) => {
+        const database = ev.target.result;
+        if (!database.objectStoreNames.contains(STORE_NOME)) {
+          database.createObjectStore(STORE_NOME);
+        }
+      };
+      req.onsuccess = (ev) => resolve(ev.target.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function carregarTudoDoDB(database) {
+    return new Promise((resolve) => {
+      try {
+        const tx = database.transaction(STORE_NOME, 'readonly');
+        const store = tx.objectStore(STORE_NOME);
+        const req = store.openCursor();
+        req.onsuccess = (ev) => {
+          const cursor = ev.target.result;
+          if (cursor) { cache[cursor.key] = cursor.value; cursor.continue(); }
+          else resolve();
+        };
+        req.onerror = () => resolve();
+      } catch (e) { resolve(); }
+    });
+  }
+
+  function migrarDoLocalStorageAntigo() {
+    // Copia para o cache (e depois para o IndexedDB) qualquer dado que
+    // ainda esteja no localStorage de versões anteriores do painel,
+    // para não perder nada que já tinha sido salvo antes desta mudança.
+    try {
+      const chaves = [];
+      for (let i = 0; i < window.localStorage.length; i++) chaves.push(window.localStorage.key(i));
+      chaves.forEach(k => {
+        if (!(k in cache)) {
+          const v = window.localStorage.getItem(k);
+          cache[k] = v;
+          escreverNoDB(k, v);
+        }
+      });
+    } catch (e) { /* localStorage indisponível — segue só com IndexedDB/memória */ }
+  }
+
+  function escreverNoDB(chave, valor) {
+    const tarefa = () => {
+      if (!db) return;
+      try {
+        const tx = db.transaction(STORE_NOME, 'readwrite');
+        tx.objectStore(STORE_NOME).put(valor, chave);
+      } catch (e) { /* segue apenas com o cache em memória */ }
+    };
+    if (dbPronto) tarefa(); else gravacoesPendentes.push(tarefa);
+  }
+
+  function apagarNoDB(chave) {
+    const tarefa = () => {
+      if (!db) return;
+      try {
+        const tx = db.transaction(STORE_NOME, 'readwrite');
+        tx.objectStore(STORE_NOME).delete(chave);
+      } catch (e) {}
+    };
+    if (dbPronto) tarefa(); else gravacoesPendentes.push(tarefa);
+  }
+
+  window.storage = {
+    getItem(chave) {
+      return Object.prototype.hasOwnProperty.call(cache, chave) ? cache[chave] : null;
+    },
+    setItem(chave, valor) {
+      valor = String(valor);
+      cache[chave] = valor;
+      escreverNoDB(chave, valor);
+    },
+    removeItem(chave) {
+      delete cache[chave];
+      apagarNoDB(chave);
+    },
+    clear() {
+      Object.keys(cache).forEach(k => delete cache[k]);
+      if (db) { try { db.transaction(STORE_NOME, 'readwrite').objectStore(STORE_NOME).clear(); } catch(e) {} }
+    },
+    key(i) {
+      const chaves = Object.keys(cache);
+      return chaves[i] !== undefined ? chaves[i] : null;
+    },
+    get length() { return Object.keys(cache).length; }
+  };
+
+  // Popula o cache com o que já existia no localStorage (síncrono),
+  // para os dados estarem disponíveis imediatamente ao carregar a
+  // página, mesmo antes do IndexedDB terminar de abrir.
+  migrarDoLocalStorageAntigo();
+
+  abrirDB().then(async (database) => {
+    db = database;
+    await carregarTudoDoDB(database);
+    dbPronto = true;
+    gravacoesPendentes.splice(0).forEach(fn => fn());
+  }).catch((e) => {
+    console.warn('IndexedDB indisponível — usando memória/localStorage como reserva:', e && e.message);
+    dbPronto = true;
+    gravacoesPendentes.splice(0).forEach(fn => fn());
+  });
+})();
+</script>
+
+<script>
+// ══════════════════════════════════════════════════════
 
 // MÓDULO DE UNIDADES — carregado antes dos painéis C2/C3
 // para que ambos leiam/gravem cache já com a unidade certa.
@@ -2899,7 +3032,7 @@ const NUM_EQUIPES_MAX = 12;
 
 function carregarUnidades() {
   try {
-    const raw = localStorage.getItem(UNIDADES_KEY);
+    const raw = storage.getItem(UNIDADES_KEY);
     if (raw) {
       const lista = JSON.parse(raw);
       if (Array.isArray(lista) && lista.length) {
@@ -2926,12 +3059,12 @@ function obterNomeUnidadeAtiva() {
 }
 
 function salvarUnidades() {
-  try { localStorage.setItem(UNIDADES_KEY, JSON.stringify(UNIDADES)); } catch(e) {}
+  try { storage.setItem(UNIDADES_KEY, JSON.stringify(UNIDADES)); } catch(e) {}
 }
 
 function obterUnidadeAtivaSalva() {
   try {
-    const salva = localStorage.getItem(UNIDADE_ATIVA_KEY);
+    const salva = storage.getItem(UNIDADE_ATIVA_KEY);
     if (salva && UNIDADES.some(u => u.id === salva)) return salva;
   } catch(e) {}
   return UNIDADES[0].id;
@@ -2943,7 +3076,7 @@ let UNIDADE_ATIVA = obterUnidadeAtivaSalva();
 function definirUnidadeAtiva(id) {
   if (id === UNIDADE_ATIVA) return;
   UNIDADE_ATIVA = id;
-  try { localStorage.setItem(UNIDADE_ATIVA_KEY, id); } catch(e) {}
+  try { storage.setItem(UNIDADE_ATIVA_KEY, id); } catch(e) {}
   renderizarSeletorUnidade();
   if (window.C2 && window.C2.recarregarParaUnidade) window.C2.recarregarParaUnidade();
   if (window.C3 && window.C3.recarregarParaUnidade) window.C3.recarregarParaUnidade();
@@ -4463,7 +4596,7 @@ function salvarCache(nomeArquivo, dataImport) {
     const payload = { nomeArquivo, dataImport, mapeamento, rawRows, colunas,
       nomeEquipe: equipes[equipeAtiva].nome, historico: equipes[equipeAtiva].historico,
       historicoImportacoes: equipes[equipeAtiva].historicoImportacoes || [] };
-    localStorage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
+    storage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
     verificarUsoStorage();
   } catch(e) {
     console.warn('localStorage indisponível:', e.message);
@@ -4472,14 +4605,14 @@ function salvarCache(nomeArquivo, dataImport) {
 }
 
 function limparCache() {
-  try { localStorage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
+  try { storage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
 }
 
 function carregarCache() {
   let carregouAlguma = false;
   for (let i = 0; i < NUM_EQUIPES; i++) {
     try {
-      const raw = localStorage.getItem(chaveEquipe(i));
+      const raw = storage.getItem(chaveEquipe(i));
       if (!raw) continue;
       const payload = JSON.parse(raw);
       if (!payload?.rawRows?.length) continue;
@@ -4535,11 +4668,11 @@ function carregarCache() {
 // Limpa chaves de versões antigas (v1, v2 etc.), preservando a versão atual (STORAGE_KEY)
 try {
   const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (let i = 0; i < storage.length; i++) {
+    const k = storage.key(i);
     if (k && k.startsWith('painel_c2_') && !k.startsWith(STORAGE_KEY)) keysToRemove.push(k);
   }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
+  keysToRemove.forEach(k => storage.removeItem(k));
 } catch(e) {}
 
 // Migração: dados importados antes do recurso de "unidades" (chave sem "_unidade_")
@@ -4548,9 +4681,9 @@ try {
   for (let i = 0; i < NUM_EQUIPES; i++) {
     const chaveAntiga = `${STORAGE_KEY}_equipe_${i}`;
     const chaveNova = chaveEquipe(i);
-    const antigo = localStorage.getItem(chaveAntiga);
-    const novo = localStorage.getItem(chaveNova);
-    if (antigo && !novo) localStorage.setItem(chaveNova, antigo);
+    const antigo = storage.getItem(chaveAntiga);
+    const novo = storage.getItem(chaveNova);
+    if (antigo && !novo) storage.setItem(chaveNova, antigo);
   }
 } catch(e) {}
 
@@ -6031,7 +6164,7 @@ function salvarCache(nomeArquivo, dataImport) {
     const rawRows = dados.map(({ _calc, _quadObj, ...raw }) => raw);
     const payload = { nomeArquivo, dataImport, colMap, rawRows, nomeEquipe: equipes[equipeAtiva].nome, historico: equipes[equipeAtiva].historico,
       historicoImportacoes: equipes[equipeAtiva].historicoImportacoes || [] };
-    localStorage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
+    storage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
     verificarUsoStorage();
   } catch(e) {
     console.warn('localStorage indisponível:', e.message);
@@ -6040,14 +6173,14 @@ function salvarCache(nomeArquivo, dataImport) {
 }
 
 function limparCache() {
-  try { localStorage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
+  try { storage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
 }
 
 function carregarCache() {
   let carregouAlguma = false;
   for (let i = 0; i < NUM_EQUIPES; i++) {
     try {
-      const raw = localStorage.getItem(chaveEquipe(i));
+      const raw = storage.getItem(chaveEquipe(i));
       if (!raw) continue;
       const payload = JSON.parse(raw);
       if (!payload?.rawRows?.length) continue;
@@ -6088,11 +6221,11 @@ function carregarCache() {
 // Limpa chaves de versões antigas do cache, preservando a versão atual (STORAGE_KEY)
 try {
   const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const k = localStorage.key(i);
+  for (let i = 0; i < storage.length; i++) {
+    const k = storage.key(i);
     if (k && k.startsWith('painel_c3_') && !k.startsWith(STORAGE_KEY)) keysToRemove.push(k);
   }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
+  keysToRemove.forEach(k => storage.removeItem(k));
 } catch(e) {}
 
 // Migração: dados importados antes do recurso de "unidades" (chave sem "_unidade_")
@@ -6101,9 +6234,9 @@ try {
   for (let i = 0; i < NUM_EQUIPES; i++) {
     const chaveAntiga = `${STORAGE_KEY}_equipe_${i}`;
     const chaveNova = chaveEquipe(i);
-    const antigo = localStorage.getItem(chaveAntiga);
-    const novo = localStorage.getItem(chaveNova);
-    if (antigo && !novo) localStorage.setItem(chaveNova, antigo);
+    const antigo = storage.getItem(chaveAntiga);
+    const novo = storage.getItem(chaveNova);
+    if (antigo && !novo) storage.setItem(chaveNova, antigo);
   }
 } catch(e) {}
 
@@ -7604,7 +7737,7 @@ function salvarCache(nomeArquivo, dataImport) {
     const rawRows = dados.map(({ _calc, ...raw }) => raw);
     const payload = { nomeArquivo, dataImport, colMap, rawRows, nomeEquipe: equipes[equipeAtiva].nome, historico: equipes[equipeAtiva].historico,
       historicoImportacoes: equipes[equipeAtiva].historicoImportacoes || [] };
-    localStorage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
+    storage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
     verificarUsoStorage();
   } catch(e) {
     console.warn('localStorage indisponível:', e.message);
@@ -7613,14 +7746,14 @@ function salvarCache(nomeArquivo, dataImport) {
 }
 
 function limparCache() {
-  try { localStorage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
+  try { storage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
 }
 
 function carregarCache() {
   let carregouAlguma = false;
   for (let i = 0; i < NUM_EQUIPES; i++) {
     try {
-      const raw = localStorage.getItem(chaveEquipe(i));
+      const raw = storage.getItem(chaveEquipe(i));
       if (!raw) continue;
       const payload = JSON.parse(raw);
       if (!payload?.rawRows?.length) continue;
@@ -9103,7 +9236,7 @@ function salvarCache(nomeArquivo, dataImport) {
     const rawRows = dados.map(({ _calc, ...raw }) => raw);
     const payload = { nomeArquivo, dataImport, colMap, rawRows, nomeEquipe: equipes[equipeAtiva].nome, historico: equipes[equipeAtiva].historico,
       historicoImportacoes: equipes[equipeAtiva].historicoImportacoes || [] };
-    localStorage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
+    storage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
     verificarUsoStorage();
   } catch(e) {
     console.warn('localStorage indisponível:', e.message);
@@ -9112,14 +9245,14 @@ function salvarCache(nomeArquivo, dataImport) {
 }
 
 function limparCache() {
-  try { localStorage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
+  try { storage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
 }
 
 function carregarCache() {
   let carregouAlguma = false;
   for (let i = 0; i < NUM_EQUIPES; i++) {
     try {
-      const raw = localStorage.getItem(chaveEquipe(i));
+      const raw = storage.getItem(chaveEquipe(i));
       if (!raw) continue;
       const payload = JSON.parse(raw);
       if (!payload?.rawRows?.length) continue;
@@ -10639,7 +10772,7 @@ function salvarCache(nomeArquivo, dataImport) {
     const rawRows = dados.map(({ _calc, ...raw }) => raw);
     const payload = { nomeArquivo, dataImport, colMap, rawRows, nomeEquipe: equipes[equipeAtiva].nome, historico: equipes[equipeAtiva].historico,
       historicoImportacoes: equipes[equipeAtiva].historicoImportacoes || [] };
-    localStorage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
+    storage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
     verificarUsoStorage();
   } catch(e) {
     console.warn('localStorage indisponível:', e.message);
@@ -10648,14 +10781,14 @@ function salvarCache(nomeArquivo, dataImport) {
 }
 
 function limparCache() {
-  try { localStorage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
+  try { storage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
 }
 
 function carregarCache() {
   let carregouAlguma = false;
   for (let i = 0; i < NUM_EQUIPES; i++) {
     try {
-      const raw = localStorage.getItem(chaveEquipe(i));
+      const raw = storage.getItem(chaveEquipe(i));
       if (!raw) continue;
       const payload = JSON.parse(raw);
       if (!payload?.rawRows?.length) continue;
@@ -12394,7 +12527,7 @@ function salvarCache(nomeArquivo, dataImport) {
     const rawRows = dados.map(({ _calc, ...raw }) => raw);
     const payload = { nomeArquivo, dataImport, colMap, rawRows, nomeEquipe: equipes[equipeAtiva].nome, historico: equipes[equipeAtiva].historico,
       historicoImportacoes: equipes[equipeAtiva].historicoImportacoes || [] };
-    localStorage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
+    storage.setItem(chaveEquipe(equipeAtiva), JSON.stringify(payload));
     verificarUsoStorage();
   } catch(e) {
     console.warn('localStorage indisponível:', e.message);
@@ -12403,14 +12536,14 @@ function salvarCache(nomeArquivo, dataImport) {
 }
 
 function limparCache() {
-  try { localStorage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
+  try { storage.removeItem(chaveEquipe(equipeAtiva)); } catch(e) {}
 }
 
 function carregarCache() {
   let carregouAlguma = false;
   for (let i = 0; i < NUM_EQUIPES; i++) {
     try {
-      const raw = localStorage.getItem(chaveEquipe(i));
+      const raw = storage.getItem(chaveEquipe(i));
       if (!raw) continue;
       const payload = JSON.parse(raw);
       if (!payload?.rawRows?.length) continue;
@@ -12586,12 +12719,12 @@ function mostrarPainel(qual) {
 
   if (qual === 'geral' && typeof atualizarPainelGeral === 'function') atualizarPainelGeral();
   if (qual === 'evolucao' && typeof popularFiltroEvolucao === 'function') { popularFiltroEvolucao(); renderPainelEvolucao(); }
-  try { localStorage.setItem('painel_aba_ativa', qual); } catch(e) {}
+  try { storage.setItem('painel_aba_ativa', qual); } catch(e) {}
 }
 // restaura última aba usada
 (function() {
   try {
-    const ultima = localStorage.getItem('painel_aba_ativa');
+    const ultima = storage.getItem('painel_aba_ativa');
     if (ultima === 'c3' || ultima === 'c4' || ultima === 'c5' || ultima === 'c6' || ultima === 'c7' || ultima === 'geral' || ultima === 'evolucao') mostrarPainel(ultima);
   } catch(e) {}
 })();
@@ -12880,7 +13013,7 @@ function avisarStorageCheio(contexto, erro) {
   if (!el) return;
   const ehCota = erro && (erro.name === 'QuotaExceededError' || erro.code === 22 || erro.code === 1014);
   const msg = ehCota
-    ? `O armazenamento deste navegador está cheio${contexto ? ' — não foi possível salvar "' + contexto + '"' : ''}. Os dados importados agora NÃO ficarão salvos ao recarregar a página. Gere um backup (⬇ no topo) e remova planilhas de equipes que não usa mais para liberar espaço.`
+    ? `O armazenamento deste navegador está cheio${contexto ? ' — não foi possível salvar "' + contexto + '"' : ''}. Os dados importados agora NÃO ficarão salvos ao recarregar a página. Gere um backup (⬇ no topo), remova planilhas de equipes que não usa mais e libere espaço em disco para continuar salvando localmente.`
     : `Não foi possível salvar${contexto ? ' "' + contexto + '"' : ' os dados'} neste navegador (${erro?.message || 'armazenamento indisponível'}). Gere um backup para não correr risco de perder os dados.`;
   document.getElementById('storageWarningMsg').textContent = '⚠️ ' + msg;
   el.classList.remove('aviso');
@@ -12892,9 +13025,9 @@ function avisarStorageCheio(contexto, erro) {
 function estimarUsoLocalStorage() {
   let total = 0;
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      const v = localStorage.getItem(k) || '';
+    for (let i = 0; i < storage.length; i++) {
+      const k = storage.key(i);
+      const v = storage.getItem(k) || '';
       total += (k.length + v.length) * 2; // aprox. 2 bytes/caractere (UTF-16)
     }
   } catch(e) {}
@@ -12902,7 +13035,7 @@ function estimarUsoLocalStorage() {
 }
 
 function verificarUsoStorage() {
-  const LIMITE_AVISO = 4 * 1024 * 1024; // ~4MB — conservador; navegadores costumam permitir 5-10MB
+  const LIMITE_AVISO = 200 * 1024 * 1024; // ~200MB — com IndexedDB o limite real é bem maior (centenas de MB, conforme espaço em disco)
   try {
     if (sessionStorage.getItem('avisoStorageQuaseCheio')) return;
   } catch(e) {}
@@ -12913,7 +13046,7 @@ function verificarUsoStorage() {
   const el = document.getElementById('storageWarningBanner');
   if (!el) return;
   document.getElementById('storageWarningMsg').textContent =
-    `⚠️ O armazenamento deste navegador já está em ${mb} MB de uso — a maioria dos navegadores permite entre 5 e 10 MB. Se continuar importando planilhas grandes, os dados podem parar de ser salvos sem aviso. Recomendamos gerar um backup e remover planilhas antigas.`;
+    `⚠️ O armazenamento já está em ${mb} MB de uso. Embora o IndexedDB suporte bem mais que o antigo localStorage, o espaço ainda depende do disco do dispositivo. Recomendamos gerar um backup e remover planilhas antigas periodicamente.`;
   el.classList.add('show', 'aviso');
 }
 
@@ -12930,7 +13063,7 @@ function coletarDadosParaBackup() {
       // NUM_EQUIPES_MAX como teto de segurança caso a unidade não tenha o campo definido.
       const numEquipesUnidade = Math.max(cfg.numEquipes, u.numEquipes || 0, NUM_EQUIPES_MAX);
       for (let i = 0; i < numEquipesUnidade; i++) {
-        const raw = localStorage.getItem(`${cfg.storageKey}_unidade_${u.id}_equipe_${i}`);
+        const raw = storage.getItem(`${cfg.storageKey}_unidade_${u.id}_equipe_${i}`);
         if (raw) {
           try { equipesSalvas[i] = JSON.parse(raw); algumaEquipe = true; algumDado = true; }
           catch (e) { console.warn('Backup: erro ao ler equipe', painel, u.id, i, e.message); }
@@ -13032,12 +13165,12 @@ document.getElementById('backupModalConfirmar').addEventListener('click', () => 
         for (const unidadeId of Object.keys(bloco.porUnidade)) {
           const equipesSalvas = bloco.porUnidade[unidadeId];
           for (const idx of Object.keys(equipesSalvas)) {
-            localStorage.setItem(`${cfg.storageKey}_unidade_${unidadeId}_equipe_${idx}`, JSON.stringify(equipesSalvas[idx]));
+            storage.setItem(`${cfg.storageKey}_unidade_${unidadeId}_equipe_${idx}`, JSON.stringify(equipesSalvas[idx]));
           }
         }
       }
       if (b.unidadeAtiva && UNIDADES.some(u => u.id === b.unidadeAtiva)) {
-        try { localStorage.setItem(UNIDADE_ATIVA_KEY, b.unidadeAtiva); } catch(e) {}
+        try { storage.setItem(UNIDADE_ATIVA_KEY, b.unidadeAtiva); } catch(e) {}
       }
     } else {
       // backup antigo (v1, sem unidades) — restaura na unidade ativa atual
@@ -13046,7 +13179,7 @@ document.getElementById('backupModalConfirmar').addEventListener('click', () => 
         if (!bloco || !bloco.equipes) continue;
         const cfg = BACKUP_CONFIG[painel];
         for (const idx of Object.keys(bloco.equipes)) {
-          localStorage.setItem(`${cfg.storageKey}_unidade_${UNIDADE_ATIVA}_equipe_${idx}`, JSON.stringify(bloco.equipes[idx]));
+          storage.setItem(`${cfg.storageKey}_unidade_${UNIDADE_ATIVA}_equipe_${idx}`, JSON.stringify(bloco.equipes[idx]));
         }
       }
     }
@@ -13074,5 +13207,6 @@ document.getElementById('backupModalOverlay').addEventListener('click', (e) => {
 
 </body>
 </html>
+
 
 
