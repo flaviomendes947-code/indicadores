@@ -2885,7 +2885,7 @@
   <footer>Ministério da Saúde · Painel consolidado C2–C7 · <strong>Desenvolvido por Flávio Mendes</strong></footer>
 </div>
 
-<div class="painel-evolucao" id="painelEvolucao">
+<div class="painel-container painel-evolucao" id="painelEvolucao">
   <div class="pev-header">
     <h1>📈 Evolução por Indicador</h1>
     <p>Acompanhe o resultado de cada boa prática (indicador), por equipe, em cada importação de planilha já realizada.</p>
@@ -13530,7 +13530,7 @@ function renderPainelRanking() {
         ${mostrarUnidade ? `<td class="rk-unidade">${l.unidadeNome || '—'}</td>` : ''}
         <td class="rk-nome">${l.nomeEquipe}</td>
         <td>${l.total} ${cfg.unidadeTxt}</td>
-        <td class="rk-resultado">${l.resultado}<span class="rk-den"> / 100</span></td>
+        <td class="rk-resultado">${l.resultado}<span class="rk-den">%</span></td>
         <td><span class="rk-badge rk-badge-${classeCss}">${icone} ${l.classe}</span></td>
       </tr>`;
   }).join('');
@@ -13795,5 +13795,4 @@ document.getElementById('backupModalOverlay').addEventListener('click', (e) => {
 
 </body>
 </html>
-
 
