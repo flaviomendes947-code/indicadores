@@ -37,6 +37,10 @@
   @media print {
     body * { visibility: hidden; }
     .relatorio-impressao, .relatorio-impressao * { visibility: visible !important; }
+    /* a "folha flutuante" dos painéis usa overflow:hidden para arredondar
+       os cantos na tela — isso corta o relatório impresso, que precisa
+       escapar do layout normal via position:absolute. Desliga só na impressão. */
+    .painel-container { overflow: visible !important; margin: 0 !important; box-shadow: none !important; border-radius: 0 !important; }
     .relatorio-impressao {
       display: block !important;
       position: absolute; left: 0; top: 0; width: 100%;
@@ -50,6 +54,12 @@
     /* a tabela pode ter muitas colunas — usa paisagem, layout fixo e
        quebra de texto para garantir que TODAS as colunas caibam na página */
     .relatorio-impressao .tabela-wrap { overflow: visible !important; padding: 0 !important; }
+    /* no C3, .resumo e .tabela-wrap ficam display:none até o usuário
+       alternar entre "cartões"/"tabela" na tela — isso deixava o PDF
+       em branco, pois o relatório reaproveita essas mesmas classes.
+       Força a exibição de ambos durante a impressão. */
+    .relatorio-impressao .resumo { display: grid !important; }
+    .relatorio-impressao .tabela-wrap { display: block !important; }
     .relatorio-impressao table {
       width: 100% !important;
       min-width: 0 !important;
@@ -1423,6 +1433,39 @@
 .painel-evolucao .pev-vazio, .painel-evolucao .pev-vazio-eq { font-size: 0.85rem; color: #9CA3AF; padding: 10px 0; }
 .painel-evolucao footer { text-align: center; font-size: 0.72rem; color: #6B7280; margin-top: 30px; }
 
+/* ══════════════════════════════════════════════════════
+   ABA "RANKING DE EQUIPES" — resultado final e classificação
+   de todas as equipes de um programa (C2 a C7), ordenadas da
+   melhor para a pior, na unidade atualmente ativa.
+   ══════════════════════════════════════════════════════ */
+.painel-ranking { padding: 28px clamp(16px,4vw,48px) 60px; max-width: 900px; margin: 0 auto; color: #E5E7EB; }
+.painel-ranking .rk-header h1 { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 1.5rem; color: #fff; margin-bottom: 6px; }
+.painel-ranking .rk-header p { font-size: 0.85rem; color: #B8BCC8; margin-bottom: 20px; }
+.painel-ranking .rk-filtro-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: 14px 18px; margin-bottom: 22px; }
+.painel-ranking .rk-filtro-item { display: flex; flex-direction: column; gap: 4px; min-width: 240px; }
+.painel-ranking .rk-filtro-item label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: .06em; color: #9CA3AF; font-weight: 600; }
+.painel-ranking select { background: #2A2938; border: 1.5px solid rgba(255,255,255,.18); color: #fff; border-radius: 8px; padding: 8px 12px; font-family: 'Inter', sans-serif; font-size: 0.85rem; cursor: pointer; outline: none; }
+.painel-ranking select:focus { border-color: #8B5CF6; }
+.painel-ranking .rk-tabela-wrap { background: #2A2938; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; overflow: hidden; overflow-x: auto; }
+.painel-ranking table.rk-tabela { width: 100%; border-collapse: collapse; min-width: 480px; }
+.painel-ranking table.rk-tabela th, .painel-ranking table.rk-tabela td { padding: 13px 16px; font-size: 0.85rem; text-align: center; border-bottom: 1px solid rgba(255,255,255,.08); }
+.painel-ranking table.rk-tabela thead th { color: #C4B5FD; font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1.5px solid rgba(139,92,246,.4); }
+.painel-ranking table.rk-tabela tbody tr:last-child td { border-bottom: none; }
+.painel-ranking table.rk-tabela tbody tr:hover { background: rgba(255,255,255,.04); }
+.painel-ranking th:nth-child(2), .painel-ranking th:nth-child(3), .painel-ranking td.rk-nome { text-align: left; }
+.painel-ranking td.rk-unidade { text-align: left; color: #9CA3AF; font-size: 0.78rem; }
+.painel-ranking td.rk-pos { font-size: 1.05rem; font-weight: 700; white-space: nowrap; }
+.painel-ranking td.rk-nome { color: #fff; font-weight: 600; }
+.painel-ranking td.rk-resultado { font-weight: 700; font-variant-numeric: tabular-nums; color: #fff; }
+.painel-ranking td.rk-resultado .rk-den { font-weight: 400; color: #9CA3AF; font-size: 0.72rem; }
+.painel-ranking .rk-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px; font-size: 0.76rem; font-weight: 700; white-space: nowrap; }
+.painel-ranking .rk-badge-ótimo { background: rgba(30,111,217,.18); color: #6FA8F5; }
+.painel-ranking .rk-badge-bom { background: rgba(35,201,122,.18); color: #4FDB9A; }
+.painel-ranking .rk-badge-suficiente { background: rgba(240,180,0,.18); color: #F5C93E; }
+.painel-ranking .rk-badge-regular { background: rgba(240,116,14,.18); color: #F5924E; }
+.painel-ranking .rk-vazio { font-size: 0.85rem; color: #9CA3AF; padding: 24px; text-align: center; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; }
+.painel-ranking footer { text-align: center; font-size: 0.72rem; color: #6B7280; margin-top: 30px; }
+
 </style>
 </head>
 <body>
@@ -1468,6 +1511,11 @@
     <span class="ts-chip">📈</span>
     <span class="ts-name-full">Evolução</span>
     <span class="ts-name-short">Evolução</span>
+  </button>
+  <button class="ts-btn ranking" id="tsBtnRanking" onclick="mostrarPainel('ranking')">
+    <span class="ts-chip">🏆</span>
+    <span class="ts-name-full">Ranking de Equipes</span>
+    <span class="ts-name-short">Ranking</span>
   </button>
 
   <div class="ts-backup-group">
@@ -1764,6 +1812,7 @@
     <span id="c3-importMsg"></span>
     <button class="btn-reimport" onclick="C3.abrirMapeamento()">🔧 Ajustar colunas</button>
     <button class="btn-reimport" onclick="C3.resetImport()">↩ Trocar arquivo</button>
+    <button class="btn-reimport" style="color:#c0392b;font-weight:700;" onclick="C3.limparDados()">🗑 Limpar dados</button>
   </div>
 
   <div class="import-error" id="c3-importError"></div>
@@ -2000,6 +2049,7 @@
     <span id="c4-importMsg"></span>
     <button class="btn-reimport" onclick="event.stopPropagation(); C4.abrirMapeamento()">🔧 Ajustar colunas</button>
     <button class="btn-reimport" onclick="event.stopPropagation(); C4.resetImport()">↩ Trocar arquivo</button>
+    <button class="btn-reimport" style="color:#c0392b;font-weight:700;" onclick="event.stopPropagation(); C4.limparDados()">🗑 Limpar dados</button>
   </div>
 
   <div class="import-error" id="c4-importError"></div>
@@ -2213,6 +2263,7 @@
     <span id="c5-importMsg"></span>
     <button class="btn-reimport" onclick="event.stopPropagation(); C5.abrirMapeamento()">🔧 Ajustar colunas</button>
     <button class="btn-reimport" onclick="event.stopPropagation(); C5.resetImport()">↩ Trocar arquivo</button>
+    <button class="btn-reimport" style="color:#c0392b;font-weight:700;" onclick="event.stopPropagation(); C5.limparDados()">🗑 Limpar dados</button>
   </div>
 
   <div class="import-error" id="c5-importError"></div>
@@ -2422,6 +2473,7 @@
     <span id="c6-importMsg"></span>
     <button class="btn-reimport" onclick="event.stopPropagation(); C6.abrirMapeamento()">🔧 Ajustar colunas</button>
     <button class="btn-reimport" onclick="event.stopPropagation(); C6.resetImport()">↩ Trocar arquivo</button>
+    <button class="btn-reimport" style="color:#c0392b;font-weight:700;" onclick="event.stopPropagation(); C6.limparDados()">🗑 Limpar dados</button>
   </div>
 
   <div class="import-error" id="c6-importError"></div>
@@ -2635,6 +2687,7 @@
     <span id="c7-importMsg"></span>
     <button class="btn-reimport" onclick="event.stopPropagation(); C7.abrirMapeamento()">🔧 Ajustar colunas</button>
     <button class="btn-reimport" onclick="event.stopPropagation(); C7.resetImport()">↩ Trocar arquivo</button>
+    <button class="btn-reimport" style="color:#c0392b;font-weight:700;" onclick="event.stopPropagation(); C7.limparDados()">🗑 Limpar dados</button>
   </div>
 
   <div class="import-error" id="c7-importError"></div>
@@ -2865,6 +2918,31 @@
   </div>
 
   <div id="pevConteudo"></div>
+
+  <footer>Ministério da Saúde · Painel consolidado C2–C7 · <strong>Desenvolvido por Flávio Mendes</strong></footer>
+</div>
+
+<div class="painel-container painel-ranking" id="painelRanking">
+  <div class="rk-header">
+    <h1>🏆 Ranking de Equipes</h1>
+    <p>Resultado final e classificação de todas as equipes no programa selecionado, de todas as unidades, da melhor para a pior.</p>
+  </div>
+
+  <div class="rk-filtro-row">
+    <div class="rk-filtro-item">
+      <label for="rkFiltroPrograma">Programa</label>
+      <select id="rkFiltroPrograma" onchange="renderPainelRanking()">
+        <option value="c2">C2 · Desenvolvimento Infantil</option>
+        <option value="c3">C3 · Gestação e Puerpério</option>
+        <option value="c4">C4 · Cuidado da Pessoa com Diabetes</option>
+        <option value="c5">C5 · Cuidado da Pessoa com Hipertensão</option>
+        <option value="c6">C6 · Cuidado da Pessoa Idosa</option>
+        <option value="c7">C7 · Prevenção do Câncer</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="rkConteudo"></div>
 
   <footer>Ministério da Saúde · Painel consolidado C2–C7 · <strong>Desenvolvido por Flávio Mendes</strong></footer>
 </div>
@@ -3104,6 +3182,7 @@ function definirUnidadeAtiva(id) {
   if (window.C7 && window.C7.recarregarParaUnidade) window.C7.recarregarParaUnidade();
   if (typeof atualizarPainelGeral === 'function') atualizarPainelGeral();
   if (typeof popularFiltroEvolucao === 'function') { popularFiltroEvolucao(); renderPainelEvolucao(); }
+  if (typeof renderPainelRanking === 'function') renderPainelRanking();
 }
 
 function mudarUnidade(id) { definirUnidadeAtiva(id); fecharUnidadeDropdown(); }
@@ -3191,6 +3270,7 @@ function definirNumEquipesUnidade(id, valor) {
     if (window.C7 && window.C7.recarregarParaUnidade) window.C7.recarregarParaUnidade();
     if (typeof atualizarPainelGeral === 'function') atualizarPainelGeral();
     if (typeof popularFiltroEvolucao === 'function') { popularFiltroEvolucao(); renderPainelEvolucao(); }
+    if (typeof renderPainelRanking === 'function') renderPainelRanking();
   }
 }
 
@@ -3266,23 +3346,36 @@ function escapeHtmlImpressao(v) {
 }
 
 function montarTabelaImpressaoCSV(f) {
-  const cols = obterColunasCSV();
+  // no relatório impresso, omite a coluna "Valor registrado" de cada BP —
+  // só a coluna de status (Atingiu/Não atingiu) fica, senão a tabela vira
+  // uma bagunça de colunas estreitas demais no PDF. O CSV segue completo.
+  const cols = obterColunasCSV().filter(c => !c.h.includes('Valor registrado'));
   const total = f.length;
 
   const theadHTML = `<tr>${cols.map(c => `<th>${escapeHtmlImpressao(c.h)}</th>`).join('')}</tr>`;
 
-  const tbodyHTML = f.map(p => `<tr>${cols.map(c => {
-    const val = c.v(p);
-    const cls = val === 'Não atingiu' ? ' class="ri-pendente"' : '';
+  // mapeia cada coluna ao índice do BP correspondente, para juntar o status
+  // com o valor registrado na mesma célula — ex.: "Atingiu (6/9)" — sem
+  // precisar de uma coluna extra só para o valor
+  let _bpColIdx = -1;
+  const colBp = cols.map(c => c.h.startsWith('BP ') ? ++_bpColIdx : -1);
+
+  const tbodyHTML = f.map(p => `<tr>${cols.map((c, ci) => {
+    let val = c.v(p);
+    const bpi = colBp[ci];
+    if (bpi >= 0 && p._calc.bps[bpi] && p._calc.bps[bpi].valor !== undefined && p._calc.bps[bpi].valor !== '') {
+      val = `${val} (${p._calc.bps[bpi].valor})`;
+    }
+    const cls = String(val ?? '').startsWith('Não atingiu') ? ' class="ri-pendente"' : '';
     return `<td${cls}>${escapeHtmlImpressao(val)}</td>`;
   }).join('')}</tr>`).join('');
 
+  let bpCol = -1;
   const tfootHTML = !total ? '' : `<tr>${cols.map((c, ci) => {
     if (ci === 0) return `<td>TOTAL (${total} criança${total !== 1 ? 's' : ''})</td>`;
-    const bpIdx = ci - 4; // após os 4 campos de identificação
-    if (bpIdx >= 0 && bpIdx % 2 === 0) {
-      const i = Math.floor(bpIdx / 2);
-      const n = f.filter(p => p._calc.bps[i]?.status === 'ok').length;
+    if (c.h.startsWith('BP ')) {
+      bpCol++;
+      const n = f.filter(p => p._calc.bps[bpCol]?.status === 'ok').length;
       return `<td>${n} de ${total} (${Math.round(n / total * 100)}%)</td>`;
     }
     if (c.h === 'Pontuação total') {
@@ -3297,25 +3390,32 @@ function montarTabelaImpressaoCSV(f) {
 
 function gerarRelatorioPDF() {
   if (!dados.length) { setStatus('Importe uma planilha antes de gerar o relatório.', 'erro'); return; }
-  const f = getFiltrados();
-  const nomeUnidade = obterNomeUnidadeAtiva();
-  const nomeEquipe = equipes[equipeAtiva].nome;
-  const agora = new Date().toLocaleString('pt-BR');
+  try {
+    const f = getFiltrados();
+    const nomeUnidade = obterNomeUnidadeAtiva();
+    const nomeEquipe = equipes[equipeAtiva].nome;
+    const agora = new Date().toLocaleString('pt-BR');
 
-  const tabelaHTML = montarTabelaImpressaoCSV(f);
-  const indicadoresHTML = document.getElementById('c2-resumoArea').innerHTML;
+    const tabelaHTML = montarTabelaImpressaoCSV(f);
+    const indicadoresHTML = document.getElementById('c2-resumoArea').innerHTML;
 
-  document.getElementById('c2-relatorioImpressao').innerHTML = `
-    <div class="relatorio-cabecalho">
-      <h1>👶 Painel C2 · Cuidado no Desenvolvimento Infantil</h1>
-      <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
-      <p>${f.length} de ${dados.length} criança(s) no filtro atual${arquivoNome ? ' · planilha: ' + arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
-    </div>
-    <div class="resumo">${indicadoresHTML}</div>
-    <div class="tabela-wrap">${tabelaHTML}</div>
-    <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C2 · Ministério da Saúde</div>
-  `;
-  window.print();
+    document.getElementById('c2-relatorioImpressao').innerHTML = `
+      <div class="relatorio-cabecalho">
+        <h1>👶 Painel C2 · Cuidado no Desenvolvimento Infantil</h1>
+        <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
+        <p>${f.length} de ${dados.length} criança(s) no filtro atual${arquivoNome ? ' · planilha: ' + arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
+      </div>
+      <div class="resumo">${indicadoresHTML}</div>
+      <div class="tabela-wrap">${tabelaHTML}</div>
+      <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C2 · Ministério da Saúde</div>
+    `;
+    window.print();
+  } catch (e) {
+    // Antes, um erro aqui deixava o relatório em branco sem avisar nada —
+    // agora aparece na tela e no console, para dar pra diagnosticar.
+    console.error('Erro ao gerar o PDF do Painel C2:', e);
+    setStatus('Não foi possível gerar o PDF: ' + e.message + ' (veja o console do navegador, F12, para mais detalhes).', 'erro');
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -4809,6 +4909,45 @@ function obterResultadoGeral(indiceEquipe) {
   }
   return { total, resultado: media, classe, cssKey, anterior };
 }
+// ─── RESULTADO DE TODAS AS UNIDADES (usado pela aba "Ranking de Equipes") ───
+// Lê diretamente do armazenamento os dados salvos de cada equipe de CADA
+// unidade cadastrada (não só a unidade atualmente ativa na tela) e recalcula
+// o resultado de cada uma. Não altera nada do que está sendo exibido.
+function obterResultadoTodasUnidades() {
+  const linhas = [];
+  const listaUnidades = (typeof UNIDADES !== 'undefined' && UNIDADES.length) ? UNIDADES : [{ id: 'default', nome: '' }];
+  const mapeamentoOriginal = mapeamento;
+  listaUnidades.forEach(u => {
+    const n = u.numEquipes || NUM_EQUIPES_PADRAO;
+    for (let i = 0; i < n; i++) {
+      let nomeEquipe = `Equipe ${i + 1}`;
+      let total = 0, resultado = null, classe = null, cssKey = null;
+      try {
+        const raw = storage.getItem(`${STORAGE_KEY}_unidade_${u.id}_equipe_${i}`);
+        if (raw) {
+          const payload = JSON.parse(raw);
+          if (payload.nomeEquipe) nomeEquipe = payload.nomeEquipe;
+          const rows = payload.rawRows || [];
+          total = rows.length;
+          if (total) {
+            mapeamento = payload.mapeamento || {};
+            const lista = rows.map(row => ({ _calc: calcBPs(row) }));
+            const somaPontos = lista.reduce((a, p) => a + p._calc.pontos, 0);
+            resultado = Math.round((somaPontos / total) * 10) / 10;
+            if      (resultado > 75) { classe='Ótimo';     cssKey='otimo'; }
+            else if (resultado > 50) { classe='Bom';        cssKey='bom';   }
+            else if (resultado > 25) { classe='Suficiente'; cssKey='suf';   }
+            else                      { classe='Regular';   cssKey='reg';   }
+          }
+        }
+      } catch (e) { /* payload ausente ou corrompido — fica como "sem dados" */ }
+      linhas.push({ unidadeId: u.id, unidadeNome: u.nome || '', equipeIdx: i, nomeEquipe, total, resultado, classe, cssKey });
+    }
+  });
+  mapeamento = mapeamentoOriginal;
+  return linhas;
+}
+
 
 // ─── HISTÓRICO POR INDICADOR (usado pela aba "Evolução") ───
 // Retorna, para cada equipe, a série de resultados por boa prática ao
@@ -4827,7 +4966,7 @@ function obterHistoricoIndicadores() {
   return { bpsDef, equipes: listaEquipes };
 }
 
-window.C2 = { renomearEquipe, abrirModal, aplicarMapeamento, baixarTemplate, exportarCSV, fecharMapeamento, fecharModal, fecharModalBtn, setView, trocarEquipe, limparDados, abrirMapeamento, recarregarParaUnidade, atualizarAbas, gerarRelatorioPDF, compararComAnterior, fecharComparacao, irPagina, obterResultadoGeral, obterHistoricoIndicadores };
+window.C2 = { renomearEquipe, abrirModal, aplicarMapeamento, baixarTemplate, exportarCSV, fecharMapeamento, fecharModal, fecharModalBtn, setView, trocarEquipe, limparDados, abrirMapeamento, recarregarParaUnidade, atualizarAbas, gerarRelatorioPDF, compararComAnterior, fecharComparacao, irPagina, obterResultadoGeral, obterResultadoTodasUnidades, obterHistoricoIndicadores };
 })();
 
 </script>
@@ -5351,6 +5490,12 @@ function resetImport() {
   hidePanel();
 }
 
+// Alias com o mesmo nome usado no Painel C2, para oferecer a mesma opção
+// explícita de "limpar dados" (mesmo comportamento de resetImport()).
+function limparDados() {
+  resetImport();
+}
+
 // ══════════════════════════════════════════════════════
 // AJUSTE MANUAL DE COLUNAS (mesmo recurso do Painel C2)
 // ══════════════════════════════════════════════════════
@@ -5766,24 +5911,36 @@ function escapeHtmlImpressao(v) {
 }
 
 function montarTabelaImpressaoCSV(f) {
-  const cols = obterColunasCSV();
+  // no relatório impresso, omite a coluna "Valor registrado" de cada BP —
+  // só a coluna de status (Atingiu/Não atingiu) fica, senão a tabela vira
+  // uma bagunça de colunas estreitas demais no PDF. O CSV segue completo.
+  const cols = obterColunasCSV().filter(c => !c.h.includes('Valor registrado'));
   const total = f.length;
 
   const theadHTML = `<tr>${cols.map(c => `<th>${escapeHtmlImpressao(c.h)}</th>`).join('')}</tr>`;
 
-  const tbodyHTML = f.map(p => `<tr>${cols.map(c => {
-    const val = c.v(p);
-    const cls = val === 'Não atingiu' ? ' class="ri-pendente"' : '';
+  // mapeia cada coluna ao índice do BP correspondente, para juntar o status
+  // com o valor registrado na mesma célula — ex.: "Atingiu (6/9)" — sem
+  // precisar de uma coluna extra só para o valor
+  let _bpColIdx = -1;
+  const colBp = cols.map(c => c.h.startsWith('BP ') ? ++_bpColIdx : -1);
+
+  const tbodyHTML = f.map(p => `<tr>${cols.map((c, ci) => {
+    let val = c.v(p);
+    const bpi = colBp[ci];
+    if (bpi >= 0 && p._calc.bps[bpi] && p._calc.bps[bpi].valor !== undefined && p._calc.bps[bpi].valor !== '') {
+      val = `${val} (${p._calc.bps[bpi].valor})`;
+    }
+    const cls = String(val ?? '').startsWith('Não atingiu') ? ' class="ri-pendente"' : '';
     return `<td${cls}>${escapeHtmlImpressao(val)}</td>`;
   }).join('')}</tr>`).join('');
 
+  let bpCol = -1;
   const tfootHTML = !total ? '' : `<tr>${cols.map((c, ci) => {
     if (ci === 0) return `<td>TOTAL (${total} gestante${total !== 1 ? 's' : ''})</td>`;
-    // Colunas de Atingiu/Não atingiu (pares após os 7 primeiros campos)
-    const bpIdx = ci - 7;
-    if (bpIdx >= 0 && bpIdx % 2 === 0) {
-      const i = Math.floor(bpIdx / 2);
-      const n = f.filter(p => p._calc.bps[i]?.status === 'ok').length;
+    if (c.h.startsWith('BP ')) {
+      bpCol++;
+      const n = f.filter(p => p._calc.bps[bpCol]?.status === 'ok').length;
       return `<td>${n} de ${total} (${Math.round(n / total * 100)}%)</td>`;
     }
     if (c.h === 'Pontuação total') {
@@ -5798,26 +5955,42 @@ function montarTabelaImpressaoCSV(f) {
 
 function gerarRelatorioPDF() {
   if (!dados.length) { showError('Importe uma planilha antes de gerar o relatório.'); return; }
-  const f = getFiltrados();
-  const nomeUnidade = obterNomeUnidadeAtiva();
-  const nomeEquipe = equipes[equipeAtiva].nome;
-  const arquivoNome = equipes[equipeAtiva].arquivoNome;
-  const agora = new Date().toLocaleString('pt-BR');
+  try {
+    const f = getFiltrados();
+    const nomeUnidade = obterNomeUnidadeAtiva();
+    const nomeEquipe = equipes[equipeAtiva].nome;
+    const arquivoNome = equipes[equipeAtiva].arquivoNome;
+    const agora = new Date().toLocaleString('pt-BR');
 
-  const tabelaHTML = montarTabelaImpressaoCSV(f);
-  const indicadoresHTML = document.getElementById('c3-resumoArea').innerHTML;
+    const tabelaHTML = montarTabelaImpressaoCSV(f);
+    const indicadoresHTML = document.getElementById('c3-resumoArea').innerHTML;
 
-  document.getElementById('c3-relatorioImpressao').innerHTML = `
-    <div class="relatorio-cabecalho">
-      <h1>🤰 Painel C3 · Gestação e Puerpério</h1>
-      <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
-      <p>${f.length} de ${dados.length} gestante(s)/puérpera(s) no filtro atual${arquivoNome ? ' · planilha: ' + arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
-    </div>
-    <div class="resumo">${indicadoresHTML}</div>
-    <div class="tabela-wrap">${tabelaHTML}</div>
-    <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C3 · Ministério da Saúde</div>
-  `;
-  window.print();
+    if (!indicadoresHTML || !indicadoresHTML.trim()) {
+      // O resumo só é preenchido dentro de render(), que só roda se
+      // houver dados carregados na equipe ativa. Se chegou aqui vazio,
+      // força um render antes de montar o relatório, em vez de gerar
+      // um PDF sem o bloco de indicadores.
+      render(true);
+    }
+
+    document.getElementById('c3-relatorioImpressao').innerHTML = `
+      <div class="relatorio-cabecalho">
+        <h1>🤰 Painel C3 · Gestação e Puerpério</h1>
+        <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
+        <p>${f.length} de ${dados.length} gestante(s)/puérpera(s) no filtro atual${arquivoNome ? ' · planilha: ' + arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
+      </div>
+      <div class="resumo">${document.getElementById('c3-resumoArea').innerHTML}</div>
+      <div class="tabela-wrap">${tabelaHTML}</div>
+      <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C3 · Ministério da Saúde</div>
+    `;
+    window.print();
+  } catch (e) {
+    // Antes, um erro aqui deixava o relatório em branco sem avisar
+    // nada — agora aparece na tela e no console, para dar pra
+    // diagnosticar de verdade em vez de "sumir" silenciosamente.
+    console.error('Erro ao gerar o PDF do Painel C3:', e);
+    showError('Não foi possível gerar o PDF: ' + e.message + ' (veja o console do navegador, F12, para mais detalhes).');
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -6350,6 +6523,45 @@ function obterResultadoGeral(indiceEquipe) {
   }
   return { total, resultado: media, classe, cssKey, anterior };
 }
+// ─── RESULTADO DE TODAS AS UNIDADES (usado pela aba "Ranking de Equipes") ───
+// Lê diretamente do armazenamento os dados salvos de cada equipe de CADA
+// unidade cadastrada (não só a unidade atualmente ativa na tela) e recalcula
+// o resultado de cada uma. Não altera nada do que está sendo exibido.
+function obterResultadoTodasUnidades() {
+  const linhas = [];
+  const listaUnidades = (typeof UNIDADES !== 'undefined' && UNIDADES.length) ? UNIDADES : [{ id: 'default', nome: '' }];
+  const colMapOriginal = colMap;
+  listaUnidades.forEach(u => {
+    const n = u.numEquipes || NUM_EQUIPES_PADRAO;
+    for (let i = 0; i < n; i++) {
+      let nomeEquipe = `Equipe ${i + 1}`;
+      let total = 0, resultado = null, classe = null, cssKey = null;
+      try {
+        const raw = storage.getItem(`${STORAGE_KEY}_unidade_${u.id}_equipe_${i}`);
+        if (raw) {
+          const payload = JSON.parse(raw);
+          if (payload.nomeEquipe) nomeEquipe = payload.nomeEquipe;
+          const rows = payload.rawRows || [];
+          total = rows.length;
+          if (total) {
+            colMap = payload.colMap || {};
+            const lista = rows.map(row => ({ _calc: calcBPs(row) }));
+            const somaPontos = lista.reduce((a, p) => a + p._calc.pontos, 0);
+            resultado = Math.round((somaPontos / total) * 10) / 10;
+            if      (resultado > 75) { classe='Ótimo';     cssKey='otimo'; }
+            else if (resultado > 50) { classe='Bom';        cssKey='bom';   }
+            else if (resultado > 25) { classe='Suficiente'; cssKey='suf';   }
+            else                      { classe='Regular';   cssKey='reg';   }
+          }
+        }
+      } catch (e) { /* payload ausente ou corrompido — fica como "sem dados" */ }
+      linhas.push({ unidadeId: u.id, unidadeNome: u.nome || '', equipeIdx: i, nomeEquipe, total, resultado, classe, cssKey });
+    }
+  });
+  colMap = colMapOriginal;
+  return linhas;
+}
+
 
 // ─── HISTÓRICO POR INDICADOR (usado pela aba "Evolução") ───
 // Retorna, para cada equipe, a série de resultados por boa prática ao
@@ -6368,7 +6580,7 @@ function obterHistoricoIndicadores() {
   return { bpsDef, equipes: listaEquipes };
 }
 
-window.C3 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, irPagina, obterResultadoGeral, obterHistoricoIndicadores };
+window.C3 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, limparDados, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, irPagina, obterResultadoGeral, obterResultadoTodasUnidades, obterHistoricoIndicadores };
 })();
 
 </script>
@@ -6806,6 +7018,12 @@ function resetImport() {
   document.getElementById('c4-importError').classList.remove('show');
   atualizarAbas();
   hidePanel();
+}
+
+// Alias com o mesmo nome usado no Painel C2, para oferecer a mesma opção
+// explícita de "limpar dados" (mesmo comportamento de resetImport()).
+function limparDados() {
+  resetImport();
 }
 
 // ══════════════════════════════════════════════════════
@@ -7336,23 +7554,36 @@ function escapeHtmlImpressao(v) {
 }
 
 function montarTabelaImpressaoCSV(f) {
-  const cols = obterColunasCSV();
+  // no relatório impresso, omite a coluna "Valor registrado" de cada BP —
+  // só a coluna de status (Atingiu/Não atingiu) fica, senão a tabela vira
+  // uma bagunça de colunas estreitas demais no PDF. O CSV segue completo.
+  const cols = obterColunasCSV().filter(c => !c.h.includes('Valor registrado'));
   const total = f.length;
 
   const theadHTML = `<tr>${cols.map(c => `<th>${escapeHtmlImpressao(c.h)}</th>`).join('')}</tr>`;
 
-  const tbodyHTML = f.map(p => `<tr>${cols.map(c => {
-    const val = c.v(p);
-    const cls = val === 'Não atingiu' ? ' class="ri-pendente"' : '';
+  // mapeia cada coluna ao índice do BP correspondente, para juntar o status
+  // com o valor registrado na mesma célula — ex.: "Atingiu (6/9)" — sem
+  // precisar de uma coluna extra só para o valor
+  let _bpColIdx = -1;
+  const colBp = cols.map(c => c.h.startsWith('BP ') ? ++_bpColIdx : -1);
+
+  const tbodyHTML = f.map(p => `<tr>${cols.map((c, ci) => {
+    let val = c.v(p);
+    const bpi = colBp[ci];
+    if (bpi >= 0 && p._calc.bps[bpi] && p._calc.bps[bpi].valor !== undefined && p._calc.bps[bpi].valor !== '') {
+      val = `${val} (${p._calc.bps[bpi].valor})`;
+    }
+    const cls = String(val ?? '').startsWith('Não atingiu') ? ' class="ri-pendente"' : '';
     return `<td${cls}>${escapeHtmlImpressao(val)}</td>`;
   }).join('')}</tr>`).join('');
 
+  let bpCol = -1;
   const tfootHTML = !total ? '' : `<tr>${cols.map((c, ci) => {
     if (ci === 0) return `<td>TOTAL (${total} pessoa${total !== 1 ? 's' : ''})</td>`;
-    const bpIdx = ci - 4;
-    if (bpIdx >= 0 && bpIdx % 2 === 0) {
-      const i = Math.floor(bpIdx / 2);
-      const n = f.filter(p => p._calc.bps[i]?.status === 'ok').length;
+    if (c.h.startsWith('BP ')) {
+      bpCol++;
+      const n = f.filter(p => p._calc.bps[bpCol]?.status === 'ok').length;
       return `<td>${n} de ${total} (${Math.round(n / total * 100)}%)</td>`;
     }
     if (c.h === 'Pontuação total') {
@@ -7367,25 +7598,30 @@ function montarTabelaImpressaoCSV(f) {
 
 function gerarRelatorioPDF() {
   if (!dados.length) { showError('Importe uma planilha antes de gerar o relatório.'); return; }
-  const f = getFiltrados();
-  const nomeUnidade = obterNomeUnidadeAtiva();
-  const nomeEquipe = equipes[equipeAtiva].nome;
-  const agora = new Date().toLocaleString('pt-BR');
+  try {
+    const f = getFiltrados();
+    const nomeUnidade = obterNomeUnidadeAtiva();
+    const nomeEquipe = equipes[equipeAtiva].nome;
+    const agora = new Date().toLocaleString('pt-BR');
 
-  const tabelaHTML = montarTabelaImpressaoCSV(f);
-  const indicadoresHTML = document.getElementById('c4-resumoArea').innerHTML;
+    const tabelaHTML = montarTabelaImpressaoCSV(f);
+    const indicadoresHTML = document.getElementById('c4-resumoArea').innerHTML;
 
-  document.getElementById('c4-relatorioImpressao').innerHTML = `
-    <div class="relatorio-cabecalho">
-      <h1>🩸 Painel C4 · Cuidado da Pessoa com Diabetes</h1>
-      <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
-      <p>${f.length} de ${dados.length} pessoa(s) no filtro atual${equipes[equipeAtiva].arquivoNome ? ' · planilha: ' + equipes[equipeAtiva].arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
-    </div>
-    <div class="resumo">${indicadoresHTML}</div>
-    <div class="tabela-wrap">${tabelaHTML}</div>
-    <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C4 · Ministério da Saúde</div>
-  `;
-  window.print();
+    document.getElementById('c4-relatorioImpressao').innerHTML = `
+      <div class="relatorio-cabecalho">
+        <h1>🩸 Painel C4 · Cuidado da Pessoa com Diabetes</h1>
+        <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
+        <p>${f.length} de ${dados.length} pessoa(s) no filtro atual${equipes[equipeAtiva].arquivoNome ? ' · planilha: ' + equipes[equipeAtiva].arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
+      </div>
+      <div class="resumo">${indicadoresHTML}</div>
+      <div class="tabela-wrap">${tabelaHTML}</div>
+      <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C4 · Ministério da Saúde</div>
+    `;
+    window.print();
+  } catch (e) {
+    console.error('Erro ao gerar o PDF do Painel C4:', e);
+    showError('Não foi possível gerar o PDF: ' + e.message + ' (veja o console do navegador, F12, para mais detalhes).');
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -7897,6 +8133,45 @@ function obterResultadoGeral(indiceEquipe) {
   }
   return { total, resultado: media, classe, cssKey, anterior };
 }
+// ─── RESULTADO DE TODAS AS UNIDADES (usado pela aba "Ranking de Equipes") ───
+// Lê diretamente do armazenamento os dados salvos de cada equipe de CADA
+// unidade cadastrada (não só a unidade atualmente ativa na tela) e recalcula
+// o resultado de cada uma. Não altera nada do que está sendo exibido.
+function obterResultadoTodasUnidades() {
+  const linhas = [];
+  const listaUnidades = (typeof UNIDADES !== 'undefined' && UNIDADES.length) ? UNIDADES : [{ id: 'default', nome: '' }];
+  const colMapOriginal = colMap;
+  listaUnidades.forEach(u => {
+    const n = u.numEquipes || NUM_EQUIPES_PADRAO;
+    for (let i = 0; i < n; i++) {
+      let nomeEquipe = `Equipe ${i + 1}`;
+      let total = 0, resultado = null, classe = null, cssKey = null;
+      try {
+        const raw = storage.getItem(`${STORAGE_KEY}_unidade_${u.id}_equipe_${i}`);
+        if (raw) {
+          const payload = JSON.parse(raw);
+          if (payload.nomeEquipe) nomeEquipe = payload.nomeEquipe;
+          const rows = payload.rawRows || [];
+          total = rows.length;
+          if (total) {
+            colMap = payload.colMap || {};
+            const lista = rows.map(row => ({ _calc: calcBPs(row) }));
+            const somaPontos = lista.reduce((a, p) => a + p._calc.pontos, 0);
+            resultado = Math.round((somaPontos / total) * 10) / 10;
+            if      (resultado > 75) { classe='Ótimo';     cssKey='otimo'; }
+            else if (resultado > 50) { classe='Bom';        cssKey='bom';   }
+            else if (resultado > 25) { classe='Suficiente'; cssKey='suf';   }
+            else                      { classe='Regular';   cssKey='reg';   }
+          }
+        }
+      } catch (e) { /* payload ausente ou corrompido — fica como "sem dados" */ }
+      linhas.push({ unidadeId: u.id, unidadeNome: u.nome || '', equipeIdx: i, nomeEquipe, total, resultado, classe, cssKey });
+    }
+  });
+  colMap = colMapOriginal;
+  return linhas;
+}
+
 
 // ─── HISTÓRICO POR INDICADOR (usado pela aba "Evolução") ───
 // Retorna, para cada equipe, a série de resultados por boa prática ao
@@ -7915,7 +8190,7 @@ function obterHistoricoIndicadores() {
   return { bpsDef, equipes: listaEquipes };
 }
 
-window.C4 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, baixarTemplate, irPagina, obterResultadoGeral, obterHistoricoIndicadores };
+window.C4 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, limparDados, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, baixarTemplate, irPagina, obterResultadoGeral, obterResultadoTodasUnidades, obterHistoricoIndicadores };
 })();
 
 </script>
@@ -8340,6 +8615,12 @@ function resetImport() {
   document.getElementById('c5-importError').classList.remove('show');
   atualizarAbas();
   hidePanel();
+}
+
+// Alias com o mesmo nome usado no Painel C2, para oferecer a mesma opção
+// explícita de "limpar dados" (mesmo comportamento de resetImport()).
+function limparDados() {
+  resetImport();
 }
 
 // ══════════════════════════════════════════════════════
@@ -8837,23 +9118,36 @@ function escapeHtmlImpressao(v) {
 }
 
 function montarTabelaImpressaoCSV(f) {
-  const cols = obterColunasCSV();
+  // no relatório impresso, omite a coluna "Valor registrado" de cada BP —
+  // só a coluna de status (Atingiu/Não atingiu) fica, senão a tabela vira
+  // uma bagunça de colunas estreitas demais no PDF. O CSV segue completo.
+  const cols = obterColunasCSV().filter(c => !c.h.includes('Valor registrado'));
   const total = f.length;
 
   const theadHTML = `<tr>${cols.map(c => `<th>${escapeHtmlImpressao(c.h)}</th>`).join('')}</tr>`;
 
-  const tbodyHTML = f.map(p => `<tr>${cols.map(c => {
-    const val = c.v(p);
-    const cls = val === 'Não atingiu' ? ' class="ri-pendente"' : '';
+  // mapeia cada coluna ao índice do BP correspondente, para juntar o status
+  // com o valor registrado na mesma célula — ex.: "Atingiu (6/9)" — sem
+  // precisar de uma coluna extra só para o valor
+  let _bpColIdx = -1;
+  const colBp = cols.map(c => c.h.startsWith('BP ') ? ++_bpColIdx : -1);
+
+  const tbodyHTML = f.map(p => `<tr>${cols.map((c, ci) => {
+    let val = c.v(p);
+    const bpi = colBp[ci];
+    if (bpi >= 0 && p._calc.bps[bpi] && p._calc.bps[bpi].valor !== undefined && p._calc.bps[bpi].valor !== '') {
+      val = `${val} (${p._calc.bps[bpi].valor})`;
+    }
+    const cls = String(val ?? '').startsWith('Não atingiu') ? ' class="ri-pendente"' : '';
     return `<td${cls}>${escapeHtmlImpressao(val)}</td>`;
   }).join('')}</tr>`).join('');
 
+  let bpCol = -1;
   const tfootHTML = !total ? '' : `<tr>${cols.map((c, ci) => {
     if (ci === 0) return `<td>TOTAL (${total} pessoa${total !== 1 ? 's' : ''})</td>`;
-    const bpIdx = ci - 4;
-    if (bpIdx >= 0 && bpIdx % 2 === 0) {
-      const i = Math.floor(bpIdx / 2);
-      const n = f.filter(p => p._calc.bps[i]?.status === 'ok').length;
+    if (c.h.startsWith('BP ')) {
+      bpCol++;
+      const n = f.filter(p => p._calc.bps[bpCol]?.status === 'ok').length;
       return `<td>${n} de ${total} (${Math.round(n / total * 100)}%)</td>`;
     }
     if (c.h === 'Pontuação total') {
@@ -8868,25 +9162,30 @@ function montarTabelaImpressaoCSV(f) {
 
 function gerarRelatorioPDF() {
   if (!dados.length) { showError('Importe uma planilha antes de gerar o relatório.'); return; }
-  const f = getFiltrados();
-  const nomeUnidade = obterNomeUnidadeAtiva();
-  const nomeEquipe = equipes[equipeAtiva].nome;
-  const agora = new Date().toLocaleString('pt-BR');
+  try {
+    const f = getFiltrados();
+    const nomeUnidade = obterNomeUnidadeAtiva();
+    const nomeEquipe = equipes[equipeAtiva].nome;
+    const agora = new Date().toLocaleString('pt-BR');
 
-  const tabelaHTML = montarTabelaImpressaoCSV(f);
-  const indicadoresHTML = document.getElementById('c5-resumoArea').innerHTML;
+    const tabelaHTML = montarTabelaImpressaoCSV(f);
+    const indicadoresHTML = document.getElementById('c5-resumoArea').innerHTML;
 
-  document.getElementById('c5-relatorioImpressao').innerHTML = `
-    <div class="relatorio-cabecalho">
-      <h1>🩺 Painel C5 · Cuidado da Pessoa com Hipertensão</h1>
-      <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
-      <p>${f.length} de ${dados.length} pessoa(s) no filtro atual${equipes[equipeAtiva].arquivoNome ? ' · planilha: ' + equipes[equipeAtiva].arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
-    </div>
-    <div class="resumo">${indicadoresHTML}</div>
-    <div class="tabela-wrap">${tabelaHTML}</div>
-    <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C5 · Ministério da Saúde</div>
-  `;
-  window.print();
+    document.getElementById('c5-relatorioImpressao').innerHTML = `
+      <div class="relatorio-cabecalho">
+        <h1>🩺 Painel C5 · Cuidado da Pessoa com Hipertensão</h1>
+        <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
+        <p>${f.length} de ${dados.length} pessoa(s) no filtro atual${equipes[equipeAtiva].arquivoNome ? ' · planilha: ' + equipes[equipeAtiva].arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
+      </div>
+      <div class="resumo">${indicadoresHTML}</div>
+      <div class="tabela-wrap">${tabelaHTML}</div>
+      <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C5 · Ministério da Saúde</div>
+    `;
+    window.print();
+  } catch (e) {
+    console.error('Erro ao gerar o PDF do Painel C5:', e);
+    showError('Não foi possível gerar o PDF: ' + e.message + ' (veja o console do navegador, F12, para mais detalhes).');
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -9396,6 +9695,45 @@ function obterResultadoGeral(indiceEquipe) {
   }
   return { total, resultado: media, classe, cssKey, anterior };
 }
+// ─── RESULTADO DE TODAS AS UNIDADES (usado pela aba "Ranking de Equipes") ───
+// Lê diretamente do armazenamento os dados salvos de cada equipe de CADA
+// unidade cadastrada (não só a unidade atualmente ativa na tela) e recalcula
+// o resultado de cada uma. Não altera nada do que está sendo exibido.
+function obterResultadoTodasUnidades() {
+  const linhas = [];
+  const listaUnidades = (typeof UNIDADES !== 'undefined' && UNIDADES.length) ? UNIDADES : [{ id: 'default', nome: '' }];
+  const colMapOriginal = colMap;
+  listaUnidades.forEach(u => {
+    const n = u.numEquipes || NUM_EQUIPES_PADRAO;
+    for (let i = 0; i < n; i++) {
+      let nomeEquipe = `Equipe ${i + 1}`;
+      let total = 0, resultado = null, classe = null, cssKey = null;
+      try {
+        const raw = storage.getItem(`${STORAGE_KEY}_unidade_${u.id}_equipe_${i}`);
+        if (raw) {
+          const payload = JSON.parse(raw);
+          if (payload.nomeEquipe) nomeEquipe = payload.nomeEquipe;
+          const rows = payload.rawRows || [];
+          total = rows.length;
+          if (total) {
+            colMap = payload.colMap || {};
+            const lista = rows.map(row => ({ _calc: calcBPs(row) }));
+            const somaPontos = lista.reduce((a, p) => a + p._calc.pontos, 0);
+            resultado = Math.round((somaPontos / total) * 10) / 10;
+            if      (resultado > 75) { classe='Ótimo';     cssKey='otimo'; }
+            else if (resultado > 50) { classe='Bom';        cssKey='bom';   }
+            else if (resultado > 25) { classe='Suficiente'; cssKey='suf';   }
+            else                      { classe='Regular';   cssKey='reg';   }
+          }
+        }
+      } catch (e) { /* payload ausente ou corrompido — fica como "sem dados" */ }
+      linhas.push({ unidadeId: u.id, unidadeNome: u.nome || '', equipeIdx: i, nomeEquipe, total, resultado, classe, cssKey });
+    }
+  });
+  colMap = colMapOriginal;
+  return linhas;
+}
+
 
 // ─── HISTÓRICO POR INDICADOR (usado pela aba "Evolução") ───
 // Retorna, para cada equipe, a série de resultados por boa prática ao
@@ -9414,7 +9752,7 @@ function obterHistoricoIndicadores() {
   return { bpsDef, equipes: listaEquipes };
 }
 
-window.C5 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, baixarTemplate, irPagina, obterResultadoGeral, obterHistoricoIndicadores };
+window.C5 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, limparDados, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, baixarTemplate, irPagina, obterResultadoGeral, obterResultadoTodasUnidades, obterHistoricoIndicadores };
 })();
 
 </script>
@@ -9867,6 +10205,12 @@ function resetImport() {
   document.getElementById('c6-importError').classList.remove('show');
   atualizarAbas();
   hidePanel();
+}
+
+// Alias com o mesmo nome usado no Painel C2, para oferecer a mesma opção
+// explícita de "limpar dados" (mesmo comportamento de resetImport()).
+function limparDados() {
+  resetImport();
 }
 
 // ══════════════════════════════════════════════════════
@@ -10373,23 +10717,36 @@ function escapeHtmlImpressao(v) {
 }
 
 function montarTabelaImpressaoCSV(f) {
-  const cols = obterColunasCSV();
+  // no relatório impresso, omite a coluna "Valor registrado" de cada BP —
+  // só a coluna de status (Atingiu/Não atingiu) fica, senão a tabela vira
+  // uma bagunça de colunas estreitas demais no PDF. O CSV segue completo.
+  const cols = obterColunasCSV().filter(c => !c.h.includes('Valor registrado'));
   const total = f.length;
 
   const theadHTML = `<tr>${cols.map(c => `<th>${escapeHtmlImpressao(c.h)}</th>`).join('')}</tr>`;
 
-  const tbodyHTML = f.map(p => `<tr>${cols.map(c => {
-    const val = c.v(p);
-    const cls = val === 'Não atingiu' ? ' class="ri-pendente"' : '';
+  // mapeia cada coluna ao índice do BP correspondente, para juntar o status
+  // com o valor registrado na mesma célula — ex.: "Atingiu (6/9)" — sem
+  // precisar de uma coluna extra só para o valor
+  let _bpColIdx = -1;
+  const colBp = cols.map(c => c.h.startsWith('BP ') ? ++_bpColIdx : -1);
+
+  const tbodyHTML = f.map(p => `<tr>${cols.map((c, ci) => {
+    let val = c.v(p);
+    const bpi = colBp[ci];
+    if (bpi >= 0 && p._calc.bps[bpi] && p._calc.bps[bpi].valor !== undefined && p._calc.bps[bpi].valor !== '') {
+      val = `${val} (${p._calc.bps[bpi].valor})`;
+    }
+    const cls = String(val ?? '').startsWith('Não atingiu') ? ' class="ri-pendente"' : '';
     return `<td${cls}>${escapeHtmlImpressao(val)}</td>`;
   }).join('')}</tr>`).join('');
 
+  let bpCol = -1;
   const tfootHTML = !total ? '' : `<tr>${cols.map((c, ci) => {
     if (ci === 0) return `<td>TOTAL (${total} pessoa${total !== 1 ? 's' : ''})</td>`;
-    const bpIdx = ci - 4;
-    if (bpIdx >= 0 && bpIdx % 2 === 0) {
-      const i = Math.floor(bpIdx / 2);
-      const n = f.filter(p => p._calc.bps[i]?.status === 'ok').length;
+    if (c.h.startsWith('BP ')) {
+      bpCol++;
+      const n = f.filter(p => p._calc.bps[bpCol]?.status === 'ok').length;
       return `<td>${n} de ${total} (${Math.round(n / total * 100)}%)</td>`;
     }
     if (c.h === 'Pontuação total') {
@@ -10404,25 +10761,30 @@ function montarTabelaImpressaoCSV(f) {
 
 function gerarRelatorioPDF() {
   if (!dados.length) { showError('Importe uma planilha antes de gerar o relatório.'); return; }
-  const f = getFiltrados();
-  const nomeUnidade = obterNomeUnidadeAtiva();
-  const nomeEquipe = equipes[equipeAtiva].nome;
-  const agora = new Date().toLocaleString('pt-BR');
+  try {
+    const f = getFiltrados();
+    const nomeUnidade = obterNomeUnidadeAtiva();
+    const nomeEquipe = equipes[equipeAtiva].nome;
+    const agora = new Date().toLocaleString('pt-BR');
 
-  const tabelaHTML = montarTabelaImpressaoCSV(f);
-  const indicadoresHTML = document.getElementById('c6-resumoArea').innerHTML;
+    const tabelaHTML = montarTabelaImpressaoCSV(f);
+    const indicadoresHTML = document.getElementById('c6-resumoArea').innerHTML;
 
-  document.getElementById('c6-relatorioImpressao').innerHTML = `
-    <div class="relatorio-cabecalho">
-      <h1>🧓 Painel C6 · Cuidado da Pessoa Idosa</h1>
-      <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
-      <p>${f.length} de ${dados.length} pessoa(s) no filtro atual${equipes[equipeAtiva].arquivoNome ? ' · planilha: ' + equipes[equipeAtiva].arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
-    </div>
-    <div class="resumo">${indicadoresHTML}</div>
-    <div class="tabela-wrap">${tabelaHTML}</div>
-    <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C6 · Ministério da Saúde</div>
-  `;
-  window.print();
+    document.getElementById('c6-relatorioImpressao').innerHTML = `
+      <div class="relatorio-cabecalho">
+        <h1>🧓 Painel C6 · Cuidado da Pessoa Idosa</h1>
+        <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
+        <p>${f.length} de ${dados.length} pessoa(s) no filtro atual${equipes[equipeAtiva].arquivoNome ? ' · planilha: ' + equipes[equipeAtiva].arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
+      </div>
+      <div class="resumo">${indicadoresHTML}</div>
+      <div class="tabela-wrap">${tabelaHTML}</div>
+      <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C6 · Ministério da Saúde</div>
+    `;
+    window.print();
+  } catch (e) {
+    console.error('Erro ao gerar o PDF do Painel C6:', e);
+    showError('Não foi possível gerar o PDF: ' + e.message + ' (veja o console do navegador, F12, para mais detalhes).');
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -10932,6 +11294,45 @@ function obterResultadoGeral(indiceEquipe) {
   }
   return { total, resultado: media, classe, cssKey, anterior };
 }
+// ─── RESULTADO DE TODAS AS UNIDADES (usado pela aba "Ranking de Equipes") ───
+// Lê diretamente do armazenamento os dados salvos de cada equipe de CADA
+// unidade cadastrada (não só a unidade atualmente ativa na tela) e recalcula
+// o resultado de cada uma. Não altera nada do que está sendo exibido.
+function obterResultadoTodasUnidades() {
+  const linhas = [];
+  const listaUnidades = (typeof UNIDADES !== 'undefined' && UNIDADES.length) ? UNIDADES : [{ id: 'default', nome: '' }];
+  const colMapOriginal = colMap;
+  listaUnidades.forEach(u => {
+    const n = u.numEquipes || NUM_EQUIPES_PADRAO;
+    for (let i = 0; i < n; i++) {
+      let nomeEquipe = `Equipe ${i + 1}`;
+      let total = 0, resultado = null, classe = null, cssKey = null;
+      try {
+        const raw = storage.getItem(`${STORAGE_KEY}_unidade_${u.id}_equipe_${i}`);
+        if (raw) {
+          const payload = JSON.parse(raw);
+          if (payload.nomeEquipe) nomeEquipe = payload.nomeEquipe;
+          const rows = payload.rawRows || [];
+          total = rows.length;
+          if (total) {
+            colMap = payload.colMap || {};
+            const lista = rows.map(row => ({ _calc: calcBPs(row) }));
+            const somaPontos = lista.reduce((a, p) => a + p._calc.pontos, 0);
+            resultado = Math.round((somaPontos / total) * 10) / 10;
+            if      (resultado > 75) { classe='Ótimo';     cssKey='otimo'; }
+            else if (resultado > 50) { classe='Bom';        cssKey='bom';   }
+            else if (resultado > 25) { classe='Suficiente'; cssKey='suf';   }
+            else                      { classe='Regular';   cssKey='reg';   }
+          }
+        }
+      } catch (e) { /* payload ausente ou corrompido — fica como "sem dados" */ }
+      linhas.push({ unidadeId: u.id, unidadeNome: u.nome || '', equipeIdx: i, nomeEquipe, total, resultado, classe, cssKey });
+    }
+  });
+  colMap = colMapOriginal;
+  return linhas;
+}
+
 
 // ─── HISTÓRICO POR INDICADOR (usado pela aba "Evolução") ───
 // Retorna, para cada equipe, a série de resultados por boa prática ao
@@ -10950,7 +11351,7 @@ function obterHistoricoIndicadores() {
   return { bpsDef, equipes: listaEquipes };
 }
 
-window.C6 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, baixarTemplate, irPagina, obterResultadoGeral, obterHistoricoIndicadores };
+window.C6 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, limparDados, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, baixarTemplate, irPagina, obterResultadoGeral, obterResultadoTodasUnidades, obterHistoricoIndicadores };
 })();
 
 </script>
@@ -11422,6 +11823,12 @@ function resetImport() {
   document.getElementById('c7-importError').classList.remove('show');
   atualizarAbas();
   hidePanel();
+}
+
+// Alias com o mesmo nome usado no Painel C2, para oferecer a mesma opção
+// explícita de "limpar dados" (mesmo comportamento de resetImport()).
+function limparDados() {
+  resetImport();
 }
 
 // ══════════════════════════════════════════════════════
@@ -12094,25 +12501,39 @@ function escapeHtmlImpressao(v) {
 }
 
 function montarTabelaImpressaoCSV(f) {
-  const cols = obterColunasCSV();
+  // no relatório impresso, omite a coluna "Valor registrado" de cada BP —
+  // só a coluna de status (Atingiu/Não atingiu/Não se aplica) fica, senão
+  // a tabela vira uma bagunça de colunas estreitas demais no PDF. O CSV
+  // continua completo.
+  const cols = obterColunasCSV().filter(c => !c.h.includes('Valor registrado'));
   const total = f.length;
   const { resultado } = calcResultadoOficialEquipe(f);
 
   const theadHTML = `<tr>${cols.map(c => `<th>${escapeHtmlImpressao(c.h)}</th>`).join('')}</tr>`;
 
-  const tbodyHTML = f.map(p => `<tr>${cols.map(c => {
-    const val = c.v(p);
-    const cls = val === 'Não atingiu' ? ' class="ri-pendente"' : '';
+  // mapeia cada coluna ao índice do BP correspondente, para juntar o status
+  // com o valor registrado na mesma célula — ex.: "Atingiu (6/9)" — sem
+  // precisar de uma coluna extra só para o valor
+  let _bpColIdx = -1;
+  const colBp = cols.map(c => c.h.startsWith('BP ') ? ++_bpColIdx : -1);
+
+  const tbodyHTML = f.map(p => `<tr>${cols.map((c, ci) => {
+    let val = c.v(p);
+    const bpi = colBp[ci];
+    if (bpi >= 0 && p._calc.bps[bpi] && p._calc.bps[bpi].valor !== undefined && p._calc.bps[bpi].valor !== '') {
+      val = `${val} (${p._calc.bps[bpi].valor})`;
+    }
+    const cls = String(val ?? '').startsWith('Não atingiu') ? ' class="ri-pendente"' : '';
     return `<td${cls}>${escapeHtmlImpressao(val)}</td>`;
   }).join('')}</tr>`).join('');
 
+  let bpCol = -1;
   const tfootHTML = !total ? '' : `<tr>${cols.map((c, ci) => {
     if (ci === 0) return `<td>TOTAL (${total} pessoa${total !== 1 ? 's' : ''})</td>`;
-    const bpIdx = ci - OFFSET_COLS_FIXAS_CSV;
-    if (bpIdx >= 0 && bpIdx % 2 === 0) {
-      const i = Math.floor(bpIdx / 2);
-      const aplicaveis = f.filter(p => p._calc.bps[i]?.status !== 'na');
-      const n = aplicaveis.filter(p => p._calc.bps[i]?.status === 'ok').length;
+    if (c.h.startsWith('BP ')) {
+      bpCol++;
+      const aplicaveis = f.filter(p => p._calc.bps[bpCol]?.status !== 'na');
+      const n = aplicaveis.filter(p => p._calc.bps[bpCol]?.status === 'ok').length;
       const base = aplicaveis.length;
       return `<td>${n} de ${base} elegíveis (${base ? Math.round(n / base * 100) : 0}%)</td>`;
     }
@@ -12127,25 +12548,30 @@ function montarTabelaImpressaoCSV(f) {
 
 function gerarRelatorioPDF() {
   if (!dados.length) { showError('Importe uma planilha antes de gerar o relatório.'); return; }
-  const f = getFiltrados();
-  const nomeUnidade = obterNomeUnidadeAtiva();
-  const nomeEquipe = equipes[equipeAtiva].nome;
-  const agora = new Date().toLocaleString('pt-BR');
+  try {
+    const f = getFiltrados();
+    const nomeUnidade = obterNomeUnidadeAtiva();
+    const nomeEquipe = equipes[equipeAtiva].nome;
+    const agora = new Date().toLocaleString('pt-BR');
 
-  const tabelaHTML = montarTabelaImpressaoCSV(f);
-  const indicadoresHTML = document.getElementById('c7-resumoArea').innerHTML;
+    const tabelaHTML = montarTabelaImpressaoCSV(f);
+    const indicadoresHTML = document.getElementById('c7-resumoArea').innerHTML;
 
-  document.getElementById('c7-relatorioImpressao').innerHTML = `
-    <div class="relatorio-cabecalho">
-      <h1>🎗️ Painel C7 · Cuidado da Mulher na Prevenção do Câncer</h1>
-      <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
-      <p>${f.length} de ${dados.length} pessoa(s) no filtro atual${equipes[equipeAtiva].arquivoNome ? ' · planilha: ' + equipes[equipeAtiva].arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
-    </div>
-    <div class="resumo">${indicadoresHTML}</div>
-    <div class="tabela-wrap">${tabelaHTML}</div>
-    <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C7 · Ministério da Saúde</div>
-  `;
-  window.print();
+    document.getElementById('c7-relatorioImpressao').innerHTML = `
+      <div class="relatorio-cabecalho">
+        <h1>🎗️ Painel C7 · Cuidado da Mulher na Prevenção do Câncer</h1>
+        <p><strong>${nomeUnidade || 'Unidade não definida'}</strong> — ${nomeEquipe}</p>
+        <p>${f.length} de ${dados.length} pessoa(s) no filtro atual${equipes[equipeAtiva].arquivoNome ? ' · planilha: ' + equipes[equipeAtiva].arquivoNome : ''}${dataImportAtiva ? ' · importado em ' + dataImportAtiva : ''}</p>
+      </div>
+      <div class="resumo">${indicadoresHTML}</div>
+      <div class="tabela-wrap">${tabelaHTML}</div>
+      <div class="relatorio-rodape">Relatório gerado em ${agora} · Nota Metodológica C7 · Ministério da Saúde</div>
+    `;
+    window.print();
+  } catch (e) {
+    console.error('Erro ao gerar o PDF do Painel C7:', e);
+    showError('Não foi possível gerar o PDF: ' + e.message + ' (veja o console do navegador, F12, para mais detalhes).');
+  }
 }
 
 // ══════════════════════════════════════════════════════
@@ -12689,6 +13115,45 @@ function obterResultadoGeral(indiceEquipe) {
   }
   return { total, resultado, classe, cssKey, anterior };
 }
+// ─── RESULTADO DE TODAS AS UNIDADES (usado pela aba "Ranking de Equipes") ───
+// Lê diretamente do armazenamento os dados salvos de cada equipe de CADA
+// unidade cadastrada (não só a unidade atualmente ativa na tela) e recalcula
+// o resultado de cada uma (usando a mesma fórmula oficial ponderada por
+// indicador). Não altera nada do que está sendo exibido.
+function obterResultadoTodasUnidades() {
+  const linhas = [];
+  const listaUnidades = (typeof UNIDADES !== 'undefined' && UNIDADES.length) ? UNIDADES : [{ id: 'default', nome: '' }];
+  const colMapOriginal = colMap;
+  listaUnidades.forEach(u => {
+    const n = u.numEquipes || NUM_EQUIPES_PADRAO;
+    for (let i = 0; i < n; i++) {
+      let nomeEquipe = `Equipe ${i + 1}`;
+      let total = 0, resultado = null, classe = null, cssKey = null;
+      try {
+        const raw = storage.getItem(`${STORAGE_KEY}_unidade_${u.id}_equipe_${i}`);
+        if (raw) {
+          const payload = JSON.parse(raw);
+          if (payload.nomeEquipe) nomeEquipe = payload.nomeEquipe;
+          const rows = payload.rawRows || [];
+          total = rows.length;
+          if (total) {
+            colMap = payload.colMap || {};
+            const lista = rows.map(row => ({ _calc: calcBPs(row) }));
+            resultado = calcResultadoOficialEquipe(lista).resultado;
+            if      (resultado > 75) { classe='Ótimo';     cssKey='otimo'; }
+            else if (resultado > 50) { classe='Bom';        cssKey='bom';   }
+            else if (resultado > 25) { classe='Suficiente'; cssKey='suf';   }
+            else                      { classe='Regular';   cssKey='reg';   }
+          }
+        }
+      } catch (e) { /* payload ausente ou corrompido — fica como "sem dados" */ }
+      linhas.push({ unidadeId: u.id, unidadeNome: u.nome || '', equipeIdx: i, nomeEquipe, total, resultado, classe, cssKey });
+    }
+  });
+  colMap = colMapOriginal;
+  return linhas;
+}
+
 
 // ─── HISTÓRICO POR INDICADOR (usado pela aba "Evolução") ───
 // Retorna, para cada equipe, a série de resultados por boa prática ao
@@ -12707,14 +13172,14 @@ function obterHistoricoIndicadores() {
   return { bpsDef, equipes: listaEquipes };
 }
 
-window.C7 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, baixarTemplate, irPagina, obterResultadoGeral, obterHistoricoIndicadores };
+window.C7 = { renomearEquipe, abrirModal, exportarCSV, fecharModal, fecharModalBtn, setView, trocarEquipe, resetImport, limparDados, recarregarParaUnidade, atualizarAbas, abrirMapeamento, fecharMapeamento, aplicarMapeamento, gerarRelatorioPDF, compararComAnterior, fecharComparacao, baixarTemplate, irPagina, obterResultadoGeral, obterResultadoTodasUnidades, obterHistoricoIndicadores };
 })();
 
 </script>
 
 <script>
-const PAINEL_IDS = ['painelC2','painelC3','painelC4','painelC5','painelC6','painelC7','painelGeral','painelEvolucao'];
-const PAINEL_QUAL = { painelC2:'c2', painelC3:'c3', painelC4:'c4', painelC5:'c5', painelC6:'c6', painelC7:'c7', painelGeral:'geral', painelEvolucao:'evolucao' };
+const PAINEL_IDS = ['painelC2','painelC3','painelC4','painelC5','painelC6','painelC7','painelGeral','painelEvolucao','painelRanking'];
+const PAINEL_QUAL = { painelC2:'c2', painelC3:'c3', painelC4:'c4', painelC5:'c5', painelC6:'c6', painelC7:'c7', painelGeral:'geral', painelEvolucao:'evolucao', painelRanking:'ranking' };
 
 function mostrarPainel(qual) {
   document.getElementById('tsBtnC2').classList.toggle('active', qual === 'c2');
@@ -12725,6 +13190,7 @@ function mostrarPainel(qual) {
   document.getElementById('tsBtnC7').classList.toggle('active', qual === 'c7');
   document.getElementById('tsBtnGeral').classList.toggle('active', qual === 'geral');
   document.getElementById('tsBtnEvolucao').classList.toggle('active', qual === 'evolucao');
+  document.getElementById('tsBtnRanking').classList.toggle('active', qual === 'ranking');
 
   PAINEL_IDS.forEach(id => {
     const el = document.getElementById(id);
@@ -12755,13 +13221,14 @@ function mostrarPainel(qual) {
 
   if (qual === 'geral' && typeof atualizarPainelGeral === 'function') atualizarPainelGeral();
   if (qual === 'evolucao' && typeof popularFiltroEvolucao === 'function') { popularFiltroEvolucao(); renderPainelEvolucao(); }
+  if (qual === 'ranking' && typeof renderPainelRanking === 'function') renderPainelRanking();
   try { storage.setItem('painel_aba_ativa', qual); } catch(e) {}
 }
 // restaura última aba usada
 (function() {
   try {
     const ultima = storage.getItem('painel_aba_ativa');
-    if (ultima === 'c3' || ultima === 'c4' || ultima === 'c5' || ultima === 'c6' || ultima === 'c7' || ultima === 'geral' || ultima === 'evolucao') mostrarPainel(ultima);
+    if (ultima === 'c3' || ultima === 'c4' || ultima === 'c5' || ultima === 'c6' || ultima === 'c7' || ultima === 'geral' || ultima === 'evolucao' || ultima === 'ranking') mostrarPainel(ultima);
   } catch(e) {}
 })();
 
@@ -13011,6 +13478,91 @@ function renderPainelGeral() {
 function atualizarPainelGeral() {
   popularFiltroEquipeGeral();
   renderPainelGeral();
+}
+
+// ══════════════════════════════════════════════════════
+// ABA "RANKING DE EQUIPES" — para o programa (C2 a C7)
+// escolhido no filtro (a "lista suspensa com os cards"),
+// monta uma tabela com uma linha por equipe da unidade ativa,
+// já ordenada da equipe com melhor resultado para a pior.
+// ══════════════════════════════════════════════════════
+function renderPainelRanking() {
+  const sel = document.getElementById('rkFiltroPrograma');
+  const wrap = document.getElementById('rkConteudo');
+  if (!sel || !wrap) return;
+
+  const cfg = PAINEIS_GERAL.find(p => p.id === sel.value) || PAINEIS_GERAL[0];
+  const mod = cfg.mod();
+  if (!mod || typeof mod.obterResultadoTodasUnidades !== 'function') {
+    wrap.innerHTML = '<div class="rk-vazio">Este programa ainda não foi carregado.</div>';
+    return;
+  }
+
+  // resultado + classificação de cada equipe, de TODAS as unidades cadastradas
+  // (não só a unidade ativa no momento na tela)
+  let linhas = [];
+  try { linhas = mod.obterResultadoTodasUnidades() || []; }
+  catch (e) { linhas = []; }
+
+  if (!linhas.length) {
+    wrap.innerHTML = '<div class="rk-vazio">Nenhuma equipe encontrada.</div>';
+    return;
+  }
+
+  const mostrarUnidade = linhas.some(l => l.unidadeNome) && new Set(linhas.map(l => l.unidadeId)).size > 1;
+
+  const comDados = linhas.filter(l => l.total > 0).sort((a, b) => b.resultado - a.resultado);
+  const semDados = linhas.filter(l => !l.total);
+
+  if (!comDados.length) {
+    wrap.innerHTML = `<div class="rk-vazio">Nenhuma equipe do programa <strong>${cfg.titulo}</strong> tem planilha importada ainda, em nenhuma unidade.</div>`;
+    return;
+  }
+
+  const medalhas = ['🥇', '🥈', '🥉'];
+  let linhasHTML = comDados.map((l, i) => {
+    const pos = medalhas[i] || `${i + 1}º`;
+    const icone = PG_ICONES[l.classe] || '';
+    const classeCss = (l.classe || '').toLowerCase();
+    return `
+      <tr>
+        <td class="rk-pos">${pos}</td>
+        ${mostrarUnidade ? `<td class="rk-unidade">${l.unidadeNome || '—'}</td>` : ''}
+        <td class="rk-nome">${l.nomeEquipe}</td>
+        <td>${l.total} ${cfg.unidadeTxt}</td>
+        <td class="rk-resultado">${l.resultado}<span class="rk-den"> / 100</span></td>
+        <td><span class="rk-badge rk-badge-${classeCss}">${icone} ${l.classe}</span></td>
+      </tr>`;
+  }).join('');
+
+  // equipes que ainda não importaram planilha (em qualquer unidade) aparecem
+  // no fim, sem posição, só para deixar claro que existem mas não entram no ranking
+  if (semDados.length) {
+    linhasHTML += semDados.map(l => `
+      <tr style="opacity:.5">
+        <td class="rk-pos">—</td>
+        ${mostrarUnidade ? `<td class="rk-unidade">${l.unidadeNome || '—'}</td>` : ''}
+        <td class="rk-nome">${l.nomeEquipe}</td>
+        <td colspan="3" style="text-align:left;color:#9CA3AF;">Sem planilha importada</td>
+      </tr>`).join('');
+  }
+
+  wrap.innerHTML = `
+    <div class="rk-tabela-wrap">
+      <table class="rk-tabela">
+        <thead>
+          <tr>
+            <th>Posição</th>
+            ${mostrarUnidade ? '<th>Unidade</th>' : ''}
+            <th>Equipe</th>
+            <th>Total</th>
+            <th>Resultado</th>
+            <th>Classificação</th>
+          </tr>
+        </thead>
+        <tbody>${linhasHTML}</tbody>
+      </table>
+    </div>`;
 }
 
 // ══════════════════════════════════════════════════════
