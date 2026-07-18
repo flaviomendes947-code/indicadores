@@ -1466,9 +1466,92 @@
 .painel-ranking .rk-vazio { font-size: 0.85rem; color: #9CA3AF; padding: 24px; text-align: center; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: 12px; }
 .painel-ranking footer { text-align: center; font-size: 0.72rem; color: #6B7280; margin-top: 30px; }
 
+
+/* ══════════════════════════════════════════════════════
+   TELA DE ACESSO (login por senha de administrador ou de unidade)
+   ══════════════════════════════════════════════════════ */
+.auth-overlay {
+  position: fixed; inset: 0; z-index: 99999;
+  background: radial-gradient(1100px 640px at 18% -8%, #2C2A3D 0%, #201F2B 55%) #201F2B;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.auth-overlay.unlocked { display: none; }
+.auth-card {
+  background: #2A2938; border: 1px solid rgba(255,255,255,.1); border-radius: 18px;
+  padding: 36px 32px; max-width: 380px; width: 100%; text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4);
+}
+.auth-logo { font-size: 2.2rem; margin-bottom: 6px; }
+.auth-card h2 { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 1.4rem; color: #fff; margin: 0 0 8px; }
+.auth-card p { font-size: 0.82rem; color: #B8BCC8; margin: 0 0 18px; line-height: 1.5; }
+.auth-setup-aviso {
+  background: rgba(240,180,0,.14); border: 1px solid rgba(240,180,0,.35); color: #F5C93E;
+  border-radius: 10px; padding: 10px 14px; font-size: 0.78rem; text-align: left; margin-bottom: 16px; line-height: 1.45;
+}
+.auth-input {
+  width: 100%; box-sizing: border-box; background: #201F2B; border: 1.5px solid rgba(255,255,255,.15);
+  color: #fff; border-radius: 10px; padding: 12px 14px; font-size: 0.95rem; font-family: 'Inter', sans-serif;
+  margin-bottom: 10px; outline: none;
+}
+.auth-input:focus { border-color: #8B5CF6; }
+.auth-erro { color: #F5924E; font-size: 0.8rem; min-height: 1.2em; margin-bottom: 6px; text-align: left; }
+.auth-btn {
+  width: 100%; background: #8B5CF6; color: #fff; border: none; border-radius: 10px;
+  padding: 13px; font-size: 0.92rem; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: background .15s; margin-top: 4px;
+}
+.auth-btn:hover { background: #7C4FE0; }
+.auth-rodape { margin-top: 20px !important; font-size: 0.68rem !important; color: #6B7280 !important; }
+
+/* botão de sair + indicador de sessão, no canto do tab-switcher */
+.auth-sessao-info {
+  display: flex; align-items: center; gap: 8px; margin-left: auto; padding-left: 10px;
+  font-size: 0.76rem; color: #B8BCC8; white-space: nowrap;
+}
+.auth-sair-btn {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); color: #E5E7EB;
+  border-radius: 8px; padding: 7px 12px; font-size: 0.76rem; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif; white-space: nowrap;
+}
+.auth-sair-btn:hover { background: rgba(255,255,255,.16); }
+
+/* linha de senha dentro do modal de gerenciar unidades (admin) */
+.unidade-senha-row {
+  display: flex; align-items: center; gap: 8px; margin-top: -4px; margin-bottom: 10px;
+  padding-left: 2px; font-size: 0.78rem;
+}
+.unidade-senha-status { color: #8A8578; flex: 1; }
+.unidade-senha-btn {
+  background: none; border: 1px solid #D8D2C6; color: #5B5648; border-radius: 7px;
+  padding: 4px 10px; font-size: 0.74rem; cursor: pointer; font-family: 'Inter', sans-serif;
+}
+.unidade-senha-btn:hover { background: #F0EEEB; }
 </style>
 </head>
 <body>
+
+<!-- ══════════════════════════════════════════════════════
+     TELA DE ACESSO — bloqueia o painel até digitar a senha
+     de administrador (acesso total) ou a senha de uma unidade
+     específica (acesso só àquela unidade). Ver função tentarLogin().
+     ══════════════════════════════════════════════════════ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="auth-logo">🔒</div>
+    <h2 id="authTitulo">Acesso ao painel</h2>
+    <p id="authTexto">Digite a senha de administrador (acesso completo) ou a senha de uma unidade específica.</p>
+    <div id="authSetupAviso" class="auth-setup-aviso" style="display:none">
+      Nenhuma senha de administrador foi configurada ainda neste navegador. Defina uma agora — ela será usada para gerenciar unidades e senhas depois.
+    </div>
+    <input type="password" id="authSenhaInput" class="auth-input" placeholder="Senha" autocomplete="off">
+    <input type="password" id="authSenhaConfirmInput" class="auth-input" placeholder="Confirme a senha" autocomplete="off" style="display:none">
+    <div class="auth-erro" id="authErro"></div>
+    <button class="auth-btn" onclick="tentarLogin()">Entrar</button>
+    <p class="auth-rodape">Painel consolidado C2–C7 · Ministério da Saúde</p>
+  </div>
+</div>
+
 
 <div class="tab-switcher">
   <span class="ts-label">Painel</span>
@@ -1527,6 +1610,9 @@
     </button>
     <input type="file" id="inputRestaurar" accept="application/json,.json" style="display:none" onchange="lidarComArquivoRestauracao(event)">
   </div>
+
+  <div class="auth-sessao-info" id="authSessaoInfo"></div>
+  <button class="auth-sair-btn" onclick="sairDaSessao()" title="Encerrar sessão e pedir senha novamente">🔒 Sair</button>
 </div>
 
 <div class="unidade-bar">
@@ -3169,6 +3255,187 @@ function obterUnidadeAtivaSalva() {
 let UNIDADES = carregarUnidades();
 let UNIDADE_ATIVA = obterUnidadeAtivaSalva();
 
+// ══════════════════════════════════════════════════════
+// ACESSO POR SENHA — administrador (acesso total) ou por unidade
+// (só vê os dados daquela unidade). Ver <div id="authOverlay"> no
+// topo do <body>.
+// Aviso importante: este painel não tem servidor — então isso NÃO
+// é segurança criptográfica à prova de alguém mexendo no console do
+// navegador. É uma trava de acesso pela tela (esconde as abas e trava
+// a unidade), guardando só o HASH da senha (nunca a senha em texto
+// puro) no armazenamento local.
+// ══════════════════════════════════════════════════════
+const ADMIN_HASH_KEY = 'painel_admin_hash_v1';
+const SESSAO_KEY = 'painel_sessao_v1'; // sessionStorage — vale até fechar a aba do navegador
+
+async function hashSenha(senha) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(senha));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function obterSessaoAtual() {
+  try {
+    const raw = sessionStorage.getItem(SESSAO_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
+function salvarSessaoAtual(sessao) {
+  try { sessionStorage.setItem(SESSAO_KEY, JSON.stringify(sessao)); } catch (e) {}
+}
+
+function sairDaSessao() {
+  try { sessionStorage.removeItem(SESSAO_KEY); } catch (e) {}
+  location.reload();
+}
+
+async function tentarLogin() {
+  const senha = document.getElementById('authSenhaInput').value;
+  const erroEl = document.getElementById('authErro');
+  erroEl.textContent = '';
+  if (!senha) { erroEl.textContent = 'Digite a senha.'; return; }
+
+  let adminHash = null;
+  try { adminHash = storage.getItem(ADMIN_HASH_KEY); } catch (e) {}
+
+  // primeiro acesso — ainda não existe senha de administrador: configura agora
+  if (!adminHash) {
+    const confirmInput = document.getElementById('authSenhaConfirmInput');
+    if (confirmInput.style.display === 'none') {
+      confirmInput.style.display = 'block';
+      erroEl.textContent = 'Digite a mesma senha de novo, no campo abaixo, para confirmar.';
+      return;
+    }
+    if (senha !== confirmInput.value) {
+      erroEl.textContent = 'As senhas não coincidem. Tente novamente.';
+      confirmInput.value = '';
+      return;
+    }
+    if (senha.length < 4) {
+      erroEl.textContent = 'Use uma senha com pelo menos 4 caracteres.';
+      return;
+    }
+    const h = await hashSenha(senha);
+    try { storage.setItem(ADMIN_HASH_KEY, h); } catch (e) {}
+    salvarSessaoAtual({ tipo: 'admin' });
+    aplicarSessao({ tipo: 'admin' });
+    return;
+  }
+
+  const hashDigitado = await hashSenha(senha);
+  if (hashDigitado === adminHash) {
+    salvarSessaoAtual({ tipo: 'admin' });
+    aplicarSessao({ tipo: 'admin' });
+    return;
+  }
+
+  const unidadeEncontrada = UNIDADES.find(u => u.senhaHash === hashDigitado);
+  if (unidadeEncontrada) {
+    salvarSessaoAtual({ tipo: 'unidade', unidadeId: unidadeEncontrada.id });
+    aplicarSessao({ tipo: 'unidade', unidadeId: unidadeEncontrada.id });
+    return;
+  }
+
+  erroEl.textContent = 'Senha incorreta.';
+  document.getElementById('authSenhaInput').value = '';
+}
+
+// aplica as restrições de tela conforme o tipo de sessão autenticada
+function aplicarSessao(sessao) {
+  document.getElementById('authOverlay').classList.add('unlocked');
+  const infoEl = document.getElementById('authSessaoInfo');
+
+  if (sessao.tipo === 'admin') {
+    if (infoEl) infoEl.textContent = '👤 Administrador';
+    // acesso total — garante que nada fique escondido de uma sessão anterior
+    ['tsBtnGeral','tsBtnEvolucao','tsBtnRanking'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+    const backupGroup = document.querySelector('.ts-backup-group');
+    if (backupGroup) backupGroup.style.display = '';
+    const ubGerenciar = document.querySelector('.ub-gerenciar');
+    if (ubGerenciar) ubGerenciar.style.display = '';
+    const ubDropdownBtn = document.getElementById('ubDropdownBtn');
+    if (ubDropdownBtn) ubDropdownBtn.disabled = false;
+    return;
+  }
+
+  // sessão restrita a UMA unidade
+  const unidade = UNIDADES.find(u => u.id === sessao.unidadeId);
+  if (infoEl) infoEl.textContent = unidade ? `🏥 ${unidade.nome}` : '';
+
+  // esconde as abas que cruzam unidades (Dados Gerais / Evolução / Ranking)
+  // e o Backup/Restaurar (que inclui todas as unidades)
+  ['tsBtnGeral','tsBtnEvolucao','tsBtnRanking'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  const backupGroup = document.querySelector('.ts-backup-group');
+  if (backupGroup) backupGroup.style.display = 'none';
+
+  // trava o seletor de unidade na unidade da sessão — sem opção de trocar,
+  // e esconde o botão de gerenciar unidades (só o administrador mexe nisso)
+  const ubGerenciar = document.querySelector('.ub-gerenciar');
+  if (ubGerenciar) ubGerenciar.style.display = 'none';
+  const ubDropdownBtn = document.getElementById('ubDropdownBtn');
+  if (ubDropdownBtn) ubDropdownBtn.disabled = true;
+
+  if (unidade && UNIDADE_ATIVA !== unidade.id) {
+    definirUnidadeAtiva(unidade.id);
+  } else {
+    renderizarSeletorUnidade();
+  }
+
+  // se a última aba usada era uma das restritas, volta para o C2
+  let abaAtual = null;
+  try { abaAtual = storage.getItem('painel_aba_ativa'); } catch (e) {}
+  if (['geral','evolucao','ranking'].includes(abaAtual)) {
+    mostrarPainel('c2');
+  }
+}
+
+// ao carregar a página, restaura a sessão já autenticada nesta aba do
+// navegador (sessionStorage) — se não houver, a tela de acesso continua
+// visível até o usuário digitar a senha corretamente.
+(function() {
+  const sessao = obterSessaoAtual();
+  if (sessao) {
+    setTimeout(() => aplicarSessao(sessao), 0);
+  } else {
+    let adminHash = null;
+    try { adminHash = storage.getItem(ADMIN_HASH_KEY); } catch (e) {}
+    if (!adminHash) {
+      const aviso = document.getElementById('authSetupAviso');
+      if (aviso) aviso.style.display = 'block';
+    }
+  }
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+  ['authSenhaInput', 'authSenhaConfirmInput'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('keydown', (e) => { if (e.key === 'Enter') tentarLogin(); });
+  });
+});
+
+// senha por unidade (usado no modal "Unidades" — só o administrador chega lá)
+async function definirSenhaUnidade(id) {
+  const u = UNIDADES.find(x => x.id === id);
+  if (!u) return;
+  const nova = prompt(`Nova senha para "${u.nome}" (mínimo 4 caracteres):`);
+  if (nova === null) return;
+  if (nova.length < 4) { alert('Use uma senha com pelo menos 4 caracteres.'); return; }
+  const confirmar = prompt('Confirme a senha novamente:');
+  if (confirmar !== nova) { alert('As senhas não coincidem. Nada foi alterado.'); return; }
+  u.senhaHash = await hashSenha(nova);
+  salvarUnidades();
+  renderizarListaEdicaoUnidades();
+}
+
+function removerSenhaUnidade(id) {
+  const u = UNIDADES.find(x => x.id === id);
+  if (!u) return;
+  if (!confirm(`Remover a senha da unidade "${u.nome}"? Ela ficará visível para quem tiver a senha de administrador.`)) return;
+  delete u.senhaHash;
+  salvarUnidades();
+  renderizarListaEdicaoUnidades();
+}
+
 function definirUnidadeAtiva(id) {
   if (id === UNIDADE_ATIVA) return;
   UNIDADE_ATIVA = id;
@@ -3221,6 +3488,11 @@ function renderizarListaEdicaoUnidades() {
         value="${u.numEquipes || NUM_EQUIPES_PADRAO}" title="Quantidade de equipes desta unidade"
         onchange="definirNumEquipesUnidade('${u.id}', this.value)">
       <button class="unidade-remove-btn" onclick="removerUnidade('${u.id}')" title="Remover unidade" ${UNIDADES.length <= 1 ? 'disabled' : ''}>🗑</button>
+    </div>
+    <div class="unidade-senha-row">
+      <span class="unidade-senha-status">${u.senhaHash ? '🔒 Senha definida — só quem souber a senha vê os dados desta unidade' : '🔓 Sem senha — visível para quem tiver a senha de administrador'}</span>
+      <button class="unidade-senha-btn" onclick="definirSenhaUnidade('${u.id}')">${u.senhaHash ? 'Trocar senha' : 'Definir senha'}</button>
+      ${u.senhaHash ? `<button class="unidade-senha-btn" onclick="removerSenhaUnidade('${u.id}')">Remover senha</button>` : ''}
     </div>
   `).join('');
 }
@@ -13795,4 +14067,5 @@ document.getElementById('backupModalOverlay').addEventListener('click', (e) => {
 
 </body>
 </html>
+
 
