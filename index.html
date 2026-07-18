@@ -3129,14 +3129,16 @@
     getItem(chave) {
       return Object.prototype.hasOwnProperty.call(cache, chave) ? cache[chave] : null;
     },
-    setItem(chave, valor) {
+    setItem(chave, valor, semNuvem) {
       valor = String(valor);
       cache[chave] = valor;
       escreverNoDB(chave, valor);
+      if (!semNuvem && window.__enviarParaNuvem) window.__enviarParaNuvem(chave, valor);
     },
-    removeItem(chave) {
+    removeItem(chave, semNuvem) {
       delete cache[chave];
       apagarNoDB(chave);
+      if (!semNuvem && window.__excluirDaNuvem) window.__excluirDaNuvem(chave);
     },
     clear() {
       Object.keys(cache).forEach(k => delete cache[k]);
@@ -3182,6 +3184,184 @@
     console.warn('IndexedDB indisponível — usando memória/localStorage como reserva:', e && e.message);
     marcarStorageComoPronto();
   });
+})();
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════
+// SINCRONIZAÇÃO EM NUVEM (Firebase Realtime Database)
+// ══════════════════════════════════════════════════════
+// Faz o painel funcionar em vários computadores/navegadores ao
+// mesmo tempo: tudo que é salvo localmente (via window.storage,
+// ver bloco acima) também é enviado para um banco de dados na
+// nuvem (Firebase), e o que outros computadores salvarem chega
+// aqui automaticamente. Não depende de nenhum servidor próprio.
+//
+// Como funciona, resumidamente:
+//  1. Ao abrir o painel, faz login anônimo no Firebase (só serve
+//     para as regras de segurança aceitarem a conexão — não pede
+//     nada ao usuário, é transparente).
+//  2. Busca uma vez tudo que já está salvo na nuvem (nó "painel_kv")
+//     e mescla com o que já existe neste navegador: o que só existe
+//     aqui sobe para a nuvem; o que é mais novo na nuvem desce para
+//     cá (e a página recarrega uma única vez para os painéis lerem
+//     os dados atualizados).
+//  3. A partir daí, fica "escutando" mudanças em tempo real: se
+//     outro computador importar uma planilha nova, uma pequena
+//     notificação aparece aqui e a página recarrega sozinha para
+//     mostrar os dados novos.
+//  4. Toda vez que este navegador salva algo localmente (import de
+//     planilha, senha nova, unidade nova, etc.), o mesmo dado é
+//     automaticamente enviado para a nuvem em segundo plano.
+//
+// Se o Firebase estiver fora do ar ou bloqueado pela rede, o painel
+// continua funcionando normalmente, só que sem sincronizar — os
+// dados continuam sendo salvos localmente (IndexedDB) como antes.
+(function(){
+  const firebaseConfig = {
+    apiKey: "AIzaSyAewAOpxAuZImzEIbpTxs9G_gIH-bGwwLA",
+    authDomain: "indicadores-dd3b7.firebaseapp.com",
+    databaseURL: "https://indicadores-dd3b7-default-rtdb.firebaseio.com",
+    projectId: "indicadores-dd3b7",
+    storageBucket: "indicadores-dd3b7.firebasestorage.app",
+    messagingSenderId: "641806150716",
+    appId: "1:641806150716:web:919fb555ee2bd99100a739"
+  };
+
+  // Chaves que são preferência de navegação de CADA navegador (qual
+  // aba/unidade está aberta agora), não dados reais — não sincronizam,
+  // senão trocar de aba num computador trocaria em todos os outros.
+  const CHAVES_LOCAIS = new Set(['painel_unidade_ativa_v1', 'painel_aba_ativa']);
+
+  const DEVICE_ID = (function(){
+    try {
+      let id = window.localStorage.getItem('painel_device_id');
+      if (!id) {
+        id = 'd' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        window.localStorage.setItem('painel_device_id', id);
+      }
+      return id;
+    } catch(e) { return 'd' + Math.random().toString(36).slice(2); }
+  })();
+
+  let db = null;
+  let pronto = false;          // já terminou a mesclagem inicial
+  let avisoJaMostrado = false;
+  const escritasProprias = Object.create(null); // chave -> timestamp da última gravação feita por este navegador
+
+  function marcarEscritaPropria(chave) { escritasProprias[chave] = Date.now(); }
+
+  function avisarERecarregar() {
+    if (avisoJaMostrado) return;
+    avisoJaMostrado = true;
+    try {
+      const aviso = document.createElement('div');
+      aviso.textContent = '🔄 Novos dados sincronizados de outro computador — atualizando…';
+      aviso.style.cssText = 'position:fixed;bottom:16px;right:16px;background:#2C2A3D;color:#fff;padding:10px 16px;border-radius:8px;font-family:Inter,sans-serif;font-size:13px;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.35)';
+      document.body.appendChild(aviso);
+    } catch(e) {}
+    setTimeout(() => { location.reload(); }, 1600);
+  }
+
+  function iniciar() {
+    if (typeof firebase === 'undefined') {
+      console.warn('Firebase indisponível (rede bloqueada ou offline) — painel funcionando só localmente.');
+      return;
+    }
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.database();
+    } catch(e) { console.warn('Erro ao iniciar Firebase:', e && e.message); return; }
+
+    firebase.auth().onAuthStateChanged(function(user) {
+      if (user) conectar();
+    });
+    firebase.auth().signInAnonymously().catch(function(e) {
+      console.warn('Erro no login anônimo do Firebase (verifique se "Anônimo" está ativado em Authentication):', e && e.message);
+    });
+  }
+
+  function conectar() {
+    if (!db || conectar._feito) return;
+    conectar._feito = true;
+    const ref = db.ref('painel_kv');
+
+    ref.once('value').then(function(snapshot) {
+      const remoto = snapshot.val() || {};
+
+      // sobe para a nuvem o que só existe neste navegador ainda
+      const chavesLocais = [];
+      for (let i = 0; i < storage.length; i++) chavesLocais.push(storage.key(i));
+      chavesLocais.forEach(function(chave) {
+        if (CHAVES_LOCAIS.has(chave)) return;
+        if (!(chave in remoto)) {
+          const valor = storage.getItem(chave);
+          if (valor !== null) {
+            marcarEscritaPropria(chave);
+            ref.child(chave).set({ v: valor, t: Date.now(), origem: DEVICE_ID });
+          }
+        }
+      });
+
+      // baixa da nuvem o que é diferente do que já existe aqui
+      let mudouAlgo = false;
+      Object.keys(remoto).forEach(function(chave) {
+        const entrada = remoto[chave];
+        if (!entrada || typeof entrada.v === 'undefined') return;
+        if (storage.getItem(chave) !== entrada.v) {
+          storage.setItem(chave, entrada.v, /*semNuvem*/ true);
+          mudouAlgo = true;
+        }
+      });
+
+      if (mudouAlgo) { location.reload(); return; }
+
+      pronto = true;
+      ref.on('child_changed', tratarMudancaRemota);
+      ref.on('child_added', tratarMudancaRemota);
+    }).catch(function(e) {
+      console.warn('Erro ao sincronizar com a nuvem:', e && e.message);
+      pronto = true;
+      ref.on('child_changed', tratarMudancaRemota);
+      ref.on('child_added', tratarMudancaRemota);
+    });
+  }
+
+  function tratarMudancaRemota(snapshot) {
+    if (!pronto) return;
+    const chave = snapshot.key;
+    const entrada = snapshot.val();
+    if (!entrada || typeof entrada.v === 'undefined') return;
+    if (entrada.origem === DEVICE_ID) return; // eco da própria gravação
+    if (escritasProprias[chave] && (Date.now() - escritasProprias[chave]) < 4000) return; // eco recente
+    if (storage.getItem(chave) === entrada.v) return; // já está igual
+
+    storage.setItem(chave, entrada.v, /*semNuvem*/ true);
+    avisarERecarregar();
+  }
+
+  // usado pelo bloco de armazenamento local (window.storage) acima
+  window.__enviarParaNuvem = function(chave, valor) {
+    if (!db || !pronto) return;
+    if (CHAVES_LOCAIS.has(chave)) return;
+    marcarEscritaPropria(chave);
+    try { db.ref('painel_kv/' + chave).set({ v: valor, t: Date.now(), origem: DEVICE_ID }); } catch(e) {}
+  };
+  window.__excluirDaNuvem = function(chave) {
+    if (!db || !pronto) return;
+    if (CHAVES_LOCAIS.has(chave)) return;
+    try { db.ref('painel_kv/' + chave).remove(); } catch(e) {}
+  };
+
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(iniciar, 0);
+  } else {
+    document.addEventListener('DOMContentLoaded', iniciar);
+  }
 })();
 </script>
 
