@@ -84,36 +84,106 @@
     @page { margin: 8mm; size: landscape; }
   }
 
-  /* ── SELETOR DE PAINEL (C2 / C3) ── */
-  .tab-switcher {
+  /* ── CABEÇALHO ÚNICO (marca + abas) ──────────────────────────
+     Substitui as antigas duas barras empilhadas (tab-switcher +
+     unidade-bar) por um único cabeçalho fixo: linha 1 = marca +
+     unidade + menu de usuário; linha 2 = abas dos painéis com
+     indicador sublinhado (em vez de pílulas coloridas). */
+  .app-header {
     position: sticky; top: 0; z-index: 500;
     background: #201F2B;
-    padding: 10px 20px;
-    display: flex; align-items: center; gap: 10px;
     box-shadow: 0 2px 10px rgba(0,0,0,.25);
   }
-  .tab-switcher .ts-label {
-    color: rgba(255,255,255,.45);
-    font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
-    letter-spacing: .1em; margin-right: 4px;
+  .ah-row1 {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 10px 20px;
+    border-bottom: 1px solid rgba(255,255,255,.08);
   }
-  .ts-btn {
-    display: flex; align-items: center; gap: 8px;
-    background: rgba(255,255,255,.06);
-    border: 1.5px solid rgba(255,255,255,.12);
-    color: rgba(255,255,255,.65);
-    border-radius: 999px;
-    padding: 8px 18px 8px 8px;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.85rem; font-weight: 600;
-    cursor: pointer;
-    transition: all .18s;
-  }
-  .ts-btn:hover { border-color: rgba(255,255,255,.3); color: #fff; }
-  .ts-chip {
-    width: 24px; height: 24px; border-radius: 50%;
+  .ah-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .ah-brand-mark {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(135deg, #7F77DD, #534AB7);
     display: flex; align-items: center; justify-content: center;
-    font-family: 'DM Serif Display', serif; font-size: 0.8rem; color: #fff;
+    font-family: 'DM Serif Display', serif; font-size: .95rem; color: #fff;
+  }
+  .ah-brand-text { display: flex; flex-direction: column; min-width: 0; }
+  .ah-brand-titulo {
+    color: #fff; font-size: 0.88rem; font-weight: 600; line-height: 1.2;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ah-brand-sub {
+    color: rgba(255,255,255,.45); font-size: 0.72rem;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ah-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+  .ah-user { position: relative; }
+  .ah-user-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,.08);
+    border: 1.5px solid rgba(255,255,255,.14);
+    color: rgba(255,255,255,.75);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.95rem; cursor: pointer;
+  }
+  .ah-user-btn:hover { border-color: rgba(255,255,255,.32); color: #fff; }
+  .ah-user-menu {
+    display: none;
+    position: absolute; top: calc(100% + 8px); right: 0;
+    min-width: 240px;
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.28);
+    z-index: 600; padding: 10px;
+    flex-direction: column; gap: 8px;
+  }
+  .ah-user.open .ah-user-menu { display: flex; }
+  .ah-user-menu .auth-sessao-info { color: #4A4F5E; font-size: 0.8rem; font-weight: 600; padding: 4px 6px 8px; border-bottom: 1px solid #EEEBE5; }
+  .ah-user-menu .ub-gerenciar {
+    width: 100%; text-align: left; margin-left: 0;
+    background: #F6F4F0; border: 1px solid #E2DDD8; color: #4A4F5E;
+    border-radius: 8px; padding: 8px 10px; font-size: 0.8rem;
+  }
+  .ah-user-menu .ub-gerenciar:hover { border-color: #8A7FBE; color: #1E1C1A; }
+  .ah-user-menu .ts-backup-group { flex-direction: column; margin-left: 0; gap: 6px; }
+  .ah-user-menu .ts-backup-btn {
+    width: 100%; justify-content: flex-start;
+    background: #F6F4F0; border: 1px solid #E2DDD8; color: #4A4F5E;
+  }
+  .ah-user-menu .ts-backup-btn:hover { background: #EEEBE5; border-color: #C7C1B8; color: #1E1C1A; }
+  .ah-user-menu .ts-backup-txt { display: inline; }
+  .ah-user-menu .auth-sair-btn {
+    width: 100%; text-align: left;
+    background: #FFE0EC; border: 1px solid transparent; color: #B0003A;
+    border-radius: 8px; padding: 8px 10px; font-size: 0.8rem; font-weight: 600;
+    cursor: pointer;
+  }
+  .ah-user-menu .auth-sair-btn:hover { background: #FFC7DD; }
+
+  .ah-row2 { padding: 0 20px; }
+  .tab-switcher {
+    display: flex; align-items: center; gap: 4px;
+    overflow-x: auto;
+  }
+  .tab-switcher::-webkit-scrollbar { height: 0; }
+  .ts-btn {
+    display: flex; align-items: center; gap: 7px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255,255,255,.55);
+    border-radius: 0;
+    padding: 11px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem; font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color .15s, border-color .15s;
+  }
+  .ts-btn:hover { color: #fff; }
+  .ts-chip {
+    width: 19px; height: 19px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif; font-size: 0.68rem; color: #fff;
     flex-shrink: 0;
   }
   .ts-btn.c2 .ts-chip { background: linear-gradient(135deg, #1E5FA8, #0D3A6E); }
@@ -122,14 +192,18 @@
   .ts-btn.c5 .ts-chip { background: linear-gradient(135deg, #C0392B, #7A1F1F); }
   .ts-btn.c6 .ts-chip { background: linear-gradient(135deg, #0E8574, #0B4F45); }
   .ts-btn.c7 .ts-chip { background: linear-gradient(135deg, #A8265E, #6E1A3F); }
-  .ts-btn.geral .ts-chip { background: linear-gradient(135deg, #37474F, #102027); font-size: 0.95rem; }
-  .ts-btn.evolucao .ts-chip { background: linear-gradient(135deg, #6D28D9, #3B0764); font-size: 0.95rem; }
-  .ts-btn.active.c2 { background: rgba(30,95,168,.18); border-color: #4E8FE0; color: #fff; }
-  .ts-btn.active.c3 { background: rgba(192,66,107,.18); border-color: #E07AA0; color: #fff; }
-  .ts-btn.active.c4 { background: rgba(212,107,0,.18); border-color: #E8A34E; color: #fff; }
-  .ts-btn.active.c5 { background: rgba(192,57,43,.18); border-color: #E0776C; color: #fff; }
-  .ts-btn.active.c6 { background: rgba(14,133,116,.18); border-color: #4FBBA8; color: #fff; }
-  .ts-btn.active.geral { background: rgba(55,71,79,.18); border-color: #78909C; color: #fff; }
+  .ts-btn.geral .ts-chip { background: linear-gradient(135deg, #37474F, #102027); font-size: 0.8rem; }
+  .ts-btn.evolucao .ts-chip { background: linear-gradient(135deg, #6D28D9, #3B0764); font-size: 0.8rem; }
+  .ts-btn.active { color: #fff; }
+  .ts-btn.active.c2 { border-color: #4E8FE0; }
+  .ts-btn.active.c3 { border-color: #E07AA0; }
+  .ts-btn.active.c4 { border-color: #E8A34E; }
+  .ts-btn.active.c5 { border-color: #E0776C; }
+  .ts-btn.active.c6 { border-color: #4FBBA8; }
+  .ts-btn.active.c7 { border-color: #D9689A; }
+  .ts-btn.active.geral { border-color: #78909C; }
+  .ts-btn.active.evolucao { border-color: #A78BFA; }
+  .ts-btn.active.ranking { border-color: #E8C15A; }
   .ts-name-full { display: inline; }
   .ts-name-short { display: none; }
 
@@ -207,32 +281,21 @@
   .badge-atualizacao.critico { background: #FFE0EC; color: #B0003A; }
   .badge-atualizacao.hidden  { display: none; }
 
-  /* ── BARRA DE UNIDADE ── */
-  .unidade-bar {
-    position: sticky; top: 49px; z-index: 480;
-    background: #2C2A38;
-    border-top: 1px solid rgba(255,255,255,.08);
-    padding: 8px 20px;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .ub-icon { font-size: 0.95rem; }
-  .ub-label {
-    color: rgba(255,255,255,.4); font-size: 0.68rem; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .08em;
-  }
+  /* ── CHIP DE UNIDADE (no cabeçalho único) ── */
+  .ub-icon { font-size: 0.85rem; }
 
   /* ── DROPDOWN CUSTOMIZADO DE UNIDADE (com rolagem estilizada) ── */
-  .ub-dropdown { position: relative; max-width: 260px; }
+  .ub-dropdown { position: relative; max-width: 220px; }
   .ub-dropdown-btn {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
     width: 100%;
     background: rgba(255,255,255,.08);
     border: 1.5px solid rgba(255,255,255,.16);
     color: #fff;
-    border-radius: 7px;
-    padding: 6px 10px;
+    border-radius: 999px;
+    padding: 6px 12px;
     font-family: 'Inter', sans-serif;
-    font-size: 0.82rem; font-weight: 600;
+    font-size: 0.78rem; font-weight: 600;
     cursor: pointer;
   }
   .ub-dropdown-btn:hover { border-color: rgba(255,255,255,.32); }
@@ -425,19 +488,17 @@
   .backup-modal-btn.confirmar:hover { background: #A0355A; }
 
   @media (max-width: 720px) {
-    .tab-switcher { padding: 8px 14px; gap: 8px; flex-wrap: wrap; }
-    .ts-label { display: none; }
-    .ts-btn { padding: 7px 14px 7px 7px; font-size: 0.78rem; }
+    .ah-row1 { padding: 8px 14px; }
+    .ah-brand-titulo { font-size: 0.8rem; }
+    .ah-brand-sub { display: none; }
+    .ah-row2 { padding: 0 14px; }
+    .ts-btn { padding: 9px 8px; font-size: 0.78rem; }
     .ts-name-full { display: none; }
     .ts-name-short { display: inline; }
-    .ts-backup-group { margin-left: 0; width: 100%; justify-content: flex-end; }
-    .ts-backup-txt { display: none; }
     .backup-toast { left: 12px; right: 12px; max-width: none; }
-    .unidade-bar { padding: 8px 14px; flex-wrap: wrap; }
-    .ub-label { display: none; }
-    .ub-dropdown { max-width: 150px; }
-    .ub-dropdown-btn { font-size: 0.76rem; }
-    .ub-gerenciar { font-size: 0.7rem; padding: 6px 9px; }
+    .ub-dropdown { max-width: 130px; }
+    .ub-dropdown-btn { font-size: 0.72rem; padding: 6px 8px; }
+    .ah-user-menu { min-width: 200px; right: -8px; }
   }
 
 .panel-c2 {
@@ -1553,79 +1614,94 @@
 </div>
 
 
-<div class="tab-switcher">
-  <span class="ts-label">Painel</span>
-  <button class="ts-btn c2 active" id="tsBtnC2" onclick="mostrarPainel('c2')">
-    <span class="ts-chip">C2</span>
-    <span class="ts-name-full">Desenvolvimento Infantil</span>
-    <span class="ts-name-short">C2</span>
-  </button>
-  <button class="ts-btn c3" id="tsBtnC3" onclick="mostrarPainel('c3')">
-    <span class="ts-chip">C3</span>
-    <span class="ts-name-full">Gestação e Puerpério</span>
-    <span class="ts-name-short">C3</span>
-  </button>
-  <button class="ts-btn c4" id="tsBtnC4" onclick="mostrarPainel('c4')">
-    <span class="ts-chip">C4</span>
-    <span class="ts-name-full">Cuidado da Pessoa com Diabetes</span>
-    <span class="ts-name-short">C4</span>
-  </button>
-  <button class="ts-btn c5" id="tsBtnC5" onclick="mostrarPainel('c5')">
-    <span class="ts-chip">C5</span>
-    <span class="ts-name-full">Cuidado da Pessoa com Hipertensão</span>
-    <span class="ts-name-short">C5</span>
-  </button>
-  <button class="ts-btn c6" id="tsBtnC6" onclick="mostrarPainel('c6')">
-    <span class="ts-chip">C6</span>
-    <span class="ts-name-full">Cuidado da Pessoa Idosa</span>
-    <span class="ts-name-short">C6</span>
-  </button>
-  <button class="ts-btn c7" id="tsBtnC7" onclick="mostrarPainel('c7')">
-    <span class="ts-chip">C7</span>
-    <span class="ts-name-full">Cuidado da Mulher na Prevenção do Câncer</span>
-    <span class="ts-name-short">C7</span>
-  </button>
-  <button class="ts-btn geral" id="tsBtnGeral" onclick="mostrarPainel('geral')">
-    <span class="ts-chip">📊</span>
-    <span class="ts-name-full">Dados Gerais</span>
-    <span class="ts-name-short">Geral</span>
-  </button>
-  <button class="ts-btn evolucao" id="tsBtnEvolucao" onclick="mostrarPainel('evolucao')">
-    <span class="ts-chip">📈</span>
-    <span class="ts-name-full">Evolução</span>
-    <span class="ts-name-short">Evolução</span>
-  </button>
-  <button class="ts-btn ranking" id="tsBtnRanking" onclick="mostrarPainel('ranking')">
-    <span class="ts-chip">🏆</span>
-    <span class="ts-name-full">Ranking de Equipes</span>
-    <span class="ts-name-short">Ranking</span>
-  </button>
-
-  <div class="ts-backup-group">
-    <button class="ts-backup-btn" id="btnBackup" onclick="baixarBackupCompleto()" title="Baixa um arquivo .json com todos os dados de C2, C3, C4, C5, C6 e C7, de todas as unidades e equipes">
-      <span class="ts-backup-icon">⬇</span><span class="ts-backup-txt">Backup</span>
-    </button>
-    <button class="ts-backup-btn" id="btnRestaurar" onclick="document.getElementById('inputRestaurar').click()" title="Restaura os dados a partir de um arquivo .json de backup">
-      <span class="ts-backup-icon">⬆</span><span class="ts-backup-txt">Restaurar</span>
-    </button>
-    <input type="file" id="inputRestaurar" accept="application/json,.json" style="display:none" onchange="lidarComArquivoRestauracao(event)">
+<div class="app-header">
+  <div class="ah-row1">
+    <div class="ah-brand">
+      <span class="ah-brand-mark">P</span>
+      <span class="ah-brand-text">
+        <span class="ah-brand-titulo">Painel de indicadores</span>
+        <span class="ah-brand-sub" id="ahBrandSub">Atenção Primária à Saúde</span>
+      </span>
+    </div>
+    <div class="ah-right">
+      <div class="ub-dropdown" id="ubDropdown">
+        <button class="ub-dropdown-btn" id="ubDropdownBtn" onclick="toggleUnidadeDropdown()" title="Trocar de unidade">
+          <span class="ub-icon">🏥</span>
+          <span id="ubDropdownTexto">Carregando…</span>
+          <span class="ub-dropdown-seta">▾</span>
+        </button>
+        <div class="ub-dropdown-lista" id="ubDropdownLista"></div>
+      </div>
+      <div class="ah-user" id="ahUser">
+        <button class="ah-user-btn" onclick="toggleUserMenu()" title="Conta e ferramentas">
+          <span class="ti-icon">👤</span>
+        </button>
+        <div class="ah-user-menu" id="ahUserMenu">
+          <div class="auth-sessao-info" id="authSessaoInfo"></div>
+          <button class="ub-gerenciar" onclick="abrirGerenciarUnidades()" title="Cadastrar, renomear ou remover unidades">⚙ Gerenciar unidades</button>
+          <div class="ts-backup-group">
+            <button class="ts-backup-btn" id="btnBackup" onclick="baixarBackupCompleto()" title="Baixa um arquivo .json com todos os dados de C2, C3, C4, C5, C6 e C7, de todas as unidades e equipes">
+              <span class="ts-backup-icon">⬇</span><span class="ts-backup-txt">Backup</span>
+            </button>
+            <button class="ts-backup-btn" id="btnRestaurar" onclick="document.getElementById('inputRestaurar').click()" title="Restaura os dados a partir de um arquivo .json de backup">
+              <span class="ts-backup-icon">⬆</span><span class="ts-backup-txt">Restaurar</span>
+            </button>
+            <input type="file" id="inputRestaurar" accept="application/json,.json" style="display:none" onchange="lidarComArquivoRestauracao(event)">
+          </div>
+          <button class="auth-sair-btn" onclick="sairDaSessao()" title="Encerrar sessão e pedir senha novamente">🔒 Sair</button>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <div class="auth-sessao-info" id="authSessaoInfo"></div>
-  <button class="auth-sair-btn" onclick="sairDaSessao()" title="Encerrar sessão e pedir senha novamente">🔒 Sair</button>
-</div>
-
-<div class="unidade-bar">
-  <span class="ub-icon">🏥</span>
-  <span class="ub-label">Unidade</span>
-  <div class="ub-dropdown" id="ubDropdown">
-    <button class="ub-dropdown-btn" id="ubDropdownBtn" onclick="toggleUnidadeDropdown()">
-      <span id="ubDropdownTexto">Carregando…</span>
-      <span class="ub-dropdown-seta">▾</span>
-    </button>
-    <div class="ub-dropdown-lista" id="ubDropdownLista"></div>
+  <div class="ah-row2">
+    <div class="tab-switcher">
+      <button class="ts-btn c2 active" id="tsBtnC2" onclick="mostrarPainel('c2')">
+        <span class="ts-chip">C2</span>
+        <span class="ts-name-full">Desenvolvimento Infantil</span>
+        <span class="ts-name-short">C2</span>
+      </button>
+      <button class="ts-btn c3" id="tsBtnC3" onclick="mostrarPainel('c3')">
+        <span class="ts-chip">C3</span>
+        <span class="ts-name-full">Gestação e Puerpério</span>
+        <span class="ts-name-short">C3</span>
+      </button>
+      <button class="ts-btn c4" id="tsBtnC4" onclick="mostrarPainel('c4')">
+        <span class="ts-chip">C4</span>
+        <span class="ts-name-full">Cuidado da Pessoa com Diabetes</span>
+        <span class="ts-name-short">C4</span>
+      </button>
+      <button class="ts-btn c5" id="tsBtnC5" onclick="mostrarPainel('c5')">
+        <span class="ts-chip">C5</span>
+        <span class="ts-name-full">Cuidado da Pessoa com Hipertensão</span>
+        <span class="ts-name-short">C5</span>
+      </button>
+      <button class="ts-btn c6" id="tsBtnC6" onclick="mostrarPainel('c6')">
+        <span class="ts-chip">C6</span>
+        <span class="ts-name-full">Cuidado da Pessoa Idosa</span>
+        <span class="ts-name-short">C6</span>
+      </button>
+      <button class="ts-btn c7" id="tsBtnC7" onclick="mostrarPainel('c7')">
+        <span class="ts-chip">C7</span>
+        <span class="ts-name-full">Cuidado da Mulher na Prevenção do Câncer</span>
+        <span class="ts-name-short">C7</span>
+      </button>
+      <button class="ts-btn geral" id="tsBtnGeral" onclick="mostrarPainel('geral')">
+        <span class="ts-chip">📊</span>
+        <span class="ts-name-full">Dados Gerais</span>
+        <span class="ts-name-short">Geral</span>
+      </button>
+      <button class="ts-btn evolucao" id="tsBtnEvolucao" onclick="mostrarPainel('evolucao')">
+        <span class="ts-chip">📈</span>
+        <span class="ts-name-full">Evolução</span>
+        <span class="ts-name-short">Evolução</span>
+      </button>
+      <button class="ts-btn ranking" id="tsBtnRanking" onclick="mostrarPainel('ranking')">
+        <span class="ts-chip">🏆</span>
+        <span class="ts-name-full">Ranking de Equipes</span>
+        <span class="ts-name-short">Ranking</span>
+      </button>
+    </div>
   </div>
-  <button class="ub-gerenciar" onclick="abrirGerenciarUnidades()" title="Cadastrar, renomear ou remover unidades">⚙ Unidades</button>
 </div>
 
 <div class="backup-toast" id="backupToast"></div>
@@ -3656,6 +3732,18 @@ function fecharUnidadeDropdown() {
 document.addEventListener('click', (e) => {
   const dd = document.getElementById('ubDropdown');
   if (dd && dd.classList.contains('open') && !dd.contains(e.target)) fecharUnidadeDropdown();
+});
+
+// menu de usuário no cabeçalho (agrupa backup/restaurar/gerenciar/sair)
+function toggleUserMenu() {
+  document.getElementById('ahUser').classList.toggle('open');
+}
+function fecharUserMenu() {
+  document.getElementById('ahUser').classList.remove('open');
+}
+document.addEventListener('click', (e) => {
+  const um = document.getElementById('ahUser');
+  if (um && um.classList.contains('open') && !um.contains(e.target)) fecharUserMenu();
 });
 
 function renderizarListaEdicaoUnidades() {
